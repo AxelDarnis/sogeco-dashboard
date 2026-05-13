@@ -570,19 +570,95 @@ function renderAlert(F){
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ── KPIs ─────────────────────────────────────────────────
+
+// ── JOURS OUVRÉS SOGECO GUADELOUPE (Lun-Sam, hors fériés) ──────
+function getPaquesDate(year) {
+  // Algorithme de Butcher pour le calcul de Pâques
+  var a=year%19, b=Math.floor(year/100), c=year%100;
+  var d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  var g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  var i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  var m=Math.floor((a+11*h+22*l)/451);
+  var month=Math.floor((h+l-7*m+114)/31);
+  var day=((h+l-7*m+114)%31)+1;
+  return new Date(year, month-1, day);
+}
+
+function getJoursFeries(year) {
+  var paques = getPaquesDate(year);
+  var p = paques.getTime();
+  var D = 864e5; // 1 jour en ms
+
+  // Mardi Gras = 47 jours avant Pâques
+  var mardiGras  = new Date(p - 47*D);
+  // Mercredi des Cendres = 46 jours avant Pâques
+  var mercrCendres = new Date(p - 46*D);
+  // Mi-Carême = 3 semaines après Mercredi des Cendres (jeudi)
+  var miCareme   = new Date(p - 46*D + 18*D);
+  // Vendredi Saint = 2 jours avant Pâques
+  var vendrediSaint = new Date(p - 2*D);
+  // Lundi de Pâques
+  var lundiPaques = new Date(p + D);
+  // Ascension = 39 jours après Pâques
+  var ascension  = new Date(p + 39*D);
+  // Lundi de Pentecôte = 50 jours après Pâques
+  var pentecote  = new Date(p + 50*D);
+
+  // Tous les fériés en format YYYY-MM-DD
+  var feries = {};
+  function add(d) {
+    feries[d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)] = 1;
+  }
+  // Fériés locaux mobiles
+  add(mardiGras); add(mercrCendres); add(miCareme);
+  add(vendrediSaint); add(lundiPaques); add(ascension); add(pentecote);
+
+  // Fériés nationaux fixes
+  var fixes = ['01-01','05-01','05-08','07-14','08-15','11-11','12-25'];
+  fixes.forEach(function(f){ add(new Date(year+'-'+f)); });
+
+  // Fériés locaux Guadeloupe fixes
+  add(new Date(year+'-05-27')); // Abolition esclavage Guadeloupe
+  add(new Date(year+'-11-01')); // Toussaint
+  add(new Date(year+'-11-02')); // Jour des morts
+
+  return feries;
+}
+
+function countJoursOuvres(start, end) {
+  // Lundi à Samedi, hors fériés Guadeloupe
+  var count = 0;
+  var cur = new Date(start);
+  cur.setHours(0,0,0,0);
+  var fin = new Date(end);
+  fin.setHours(23,59,59,999);
+  var feriesCache = {};
+
+  while(cur <= fin) {
+    var dow = cur.getDay(); // 0=dim, 6=sam
+    var yr = cur.getFullYear();
+    if(!feriesCache[yr]) feriesCache[yr] = getJoursFeries(yr);
+    var key = yr+'-'+('0'+(cur.getMonth()+1)).slice(-2)+'-'+('0'+cur.getDate()).slice(-2);
+    // Lundi(1) à Samedi(6), hors fériés
+    if(dow !== 0 && !feriesCache[yr][key]) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return Math.max(1, count);
+}
+
 function renderKPIs(F,range){
   var tot=F.length;
   var eff=F.filter(function(r){return r.ok;});
   var plan=F.filter(function(r){return r.pl;});
   var tx=tot>0?Math.round(eff.length/tot*100):0;
   var na=F.filter(function(r){return !r.e||r.e===''||r.e==='nan'||r.e==='Support GEOTRA';}).length;
-  var aFact=F.filter(function(r){return r.f==='? À FACTURER';}).length;
-  var fact=F.filter(function(r){return r.f==='? FACTURÉ';}).length;
+  var aFact=F.filter(function(r){return r.f&&r.f.indexOf('FACTURER')>=0;}).length;
+  var fact=F.filter(function(r){return r.f&&r.f.indexOf('FACTURÉ')>=0&&r.f.indexOf('GARANTIE')<0;}).length;
   var dur=eff.map(function(r){return r.du;}).filter(function(d){return d>0;});
   var moy=dur.length>0?Math.round(dur.reduce(function(a,b){return a+b;},0)/dur.length):0;
   var mH=Math.floor(moy/60),mM=moy%60;
-  // Jours dans la période
-  var jours=Math.max(1,Math.round((range.e-range.s)/864e5)+1);
+  // Jours ouvrés dans la période (Lun-Sam, hors fériés Guadeloupe)
+  var jours=countJoursOuvres(range.s, range.e);
   var perDay=jours>0?(tot/jours).toFixed(1):0;
   // Semaine courante
   var now=new Date(),lun=new Date(now);
@@ -600,7 +676,7 @@ function renderKPIs(F,range){
     {l:'Facturées',u:'interv.',v:fact.toLocaleString('fr-FR'),s:'Statut « Facturé »',c:'gn'},
     {l:'Clôture sem. courante',u:'%',v:txS,s:sc.filter(function(r){return r.ok;}).length+'/'+sc.length+' cette semaine',c:txS>=90?'gn':txS>=75?'am':'rd',pct:true},
     {l:'Cette semaine',u:'interv.',v:sc.length,s:(diff>=0?'↑+':'')+diff+' vs sem. préc.',c:'bl',trend:diff},
-    {l:'Interv. / jour',u:'moy.',v:perDay,s:'Sur '+jours+' jours',c:'pu'},
+    {l:'Interv. / jour',u:'moy.',v:perDay,s:'Sur '+jours+' j. ouvrés (Lun-Sam)',c:'pu'},
     {l:'Durée moy.',u:'/ interv.',v:moy>0?mH+'h'+('0'+mM).slice(-2):'—',s:moy+' min',c:'pu'},
     {l:'Non affectées',u:'interv.',v:na,s:'Sans technicien',c:na>0?'rd':'gn'},
     {l:'À facturer',u:'interv.',v:aFact,s:'En attente',c:aFact>30?'am':'gn'},
@@ -747,9 +823,10 @@ function renderTech(F,range){
     var dur=ef.map(function(r){return r.du;}).filter(function(d){return d>0;});
     var moy=dur.length>0?Math.round(dur.reduce(function(a,b){return a+b;},0)/dur.length):0;
     var mH=Math.floor(moy/60),mM=moy%60;
-    var ipj=(my.length/jours).toFixed(1);
+    var joursOuvres=countJoursOuvres(range.s,range.e);
+  var ipj=(my.length/joursOuvres).toFixed(1);
     var na=my.filter(function(r){return (!r.e||r.e==='nan'||r.e==='Support GEOTRA')&&r.pl;}).length;
-    var af=my.filter(function(r){return r.f==='? À FACTURER';}).length;
+    var af=my.filter(function(r){return r.f&&r.f.indexOf('FACTURER')>=0;}).length;
     var col=TC[i%TC.length];
     var init=t.split(' ').filter(Boolean).map(function(w){return w[0];}).slice(0,2).join('');
     var tc=tx>=90?'gn':tx>=75?'am':'rd';
@@ -946,7 +1023,105 @@ function renderMaint(F, range) {
   }).join('');
 }
 
-function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
+
+// ── DICTIONNAIRES ───────────────────────────────────────────────
+var DICT_USERS={}, DICT_CLIENTS={}, DICT_CATS={};
+var DICT_FACTURATION={}, DICT_CAT_CUSTOM={};
+var DICT_CATEGORY={
+  '38954':'Réparation','29645':'Maintenance Préventive','29660':'Diagnostic/Devis',
+  '29655':'Installation','29640':'Maintenance Curative','33676':'CONTROLE/EPREUVE EN CHARGE',
+  '29650':'Livraison','11064':'Contrôle matériel','48521':'SAV Externe'
+};
+
+function getProxyBase(){
+  return (localStorage.getItem('sogeco_proxy_url')||'https://sogeco-proxy-qodg.vercel.app').replace(/\/$/,'');
+}
+
+async function loadAllPages(endpoint,extraParams){
+  var all=[],page=1,hasMore=true,tok=gTok(),base=getProxyBase();
+  while(hasMore&&page<=200){
+    var body=Object.assign({account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'asc',endpoint:endpoint},extraParams||{});
+    try{
+      var r=await fetch(base+'/api/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!r.ok)break;
+      var j=await r.json();
+      var items=j.results||j.data||[];
+      if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
+      all=all.concat(items);
+      var tp=parseInt(j.count_pages)||0;
+      if(tp>0&&page>=tp)hasMore=false;
+      else if(items.length<50)hasMore=false;
+      page++;
+    }catch(e){hasMore=false;}
+  }
+  return all;
+}
+
+async function loadCustomFieldValues(tok,base){
+  var found=0;
+  for(var pg=1500;pg<=1897;pg++){
+    try{
+      var body={account:'sogeco',token:tok,page_nbr:String(pg),order_by:'id',order_sort:'asc',
+                last_datetime:'2000-01-01 00:00',endpoint:'custom_field_value/read_all'};
+      var r=await fetch(base+'/api/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!r.ok)break;
+      var j=await r.json();
+      if(!j.results||j.results.length===0)break;
+      j.results.forEach(function(v){
+        if(v.link_table_name!=='intervention'||!v.valeur)return;
+        if(v.fk_unite_id==='243122'){DICT_FACTURATION[v.fk_column_id]=v.valeur;found++;}
+        if(v.fk_unite_id==='92715')DICT_CAT_CUSTOM[v.fk_column_id]=v.valeur;
+      });
+      if(j.results.length<50)break;
+    }catch(e){break;}
+  }
+  console.log('Fact loaded:',found);
+}
+
+async function loadDictionaries(){
+  try{
+    var res=await Promise.allSettled([
+      loadAllPages('user/read_all'),
+      loadAllPages('client/read_all'),
+      loadAllPages('filiale/read_all'),
+    ]);
+    if(res[0].status==='fulfilled'){res[0].value.forEach(function(u){
+      var n=((u.prenom||u.firstname||'')+' '+(u.nom||u.lastname||u.name||'')).trim();
+      DICT_USERS[u.id]=n||u.login||u.email||('User '+u.id);
+    });}
+    if(res[1].status==='fulfilled'){res[1].value.forEach(function(c){
+      DICT_CLIENTS[c.id]=c.nom||c.title||c.name||('Client '+c.id);
+    });}
+    if(res[2].status==='fulfilled'){res[2].value.forEach(function(f){
+      DICT_CATS[f.id]=f.societe||f.title||f.nom||('Act. '+f.id);
+    });}
+    console.log('Dicts loaded: users='+Object.keys(DICT_USERS).length+' clients='+Object.keys(DICT_CLIENTS).length);
+  }catch(e){console.warn('Dict error:',e);}
+}
+
+
+function setApiPillState(state,txt){
+  var p=document.getElementById('apiPill');
+  p.style.display='flex';
+  p.className='pill api-pill '+state;
+  document.getElementById('apiPillTxt').textContent=txt;
+}
+
+// Init on load
+window.addEventListener('load',function(){
+  showApiBtn();
+  setTimeout(function(){
+    if(!gTok()){
+      var b=document.createElement('div');
+      b.id='cfgBanner';
+      b.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9998;background:#1B4F8A;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-family:IBM Plex Sans,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px;';
+      b.innerHTML='<span>Connectez-vous a l API ORGANILOG pour les donnees en temps reel</span><button id="cfgBBtn" style="background:#fff;color:#1B4F8A;border:none;border-radius:5px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Configurer</button><button id="cfgBClose" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;line-height:1">x</button>';
+      document.body.appendChild(b);
+      document.getElementById('cfgBBtn').addEventListener('click',function(){b.remove();document.getElementById('btnConfig').click();});
+      document.getElementById('cfgBClose').addEventListener('click',function(){b.remove();});
+    }
+  },2000);
+});
 </script>
 
 <!-- MODAL CONFIG ADMIN -->
@@ -1110,106 +1285,34 @@ document.getElementById('btnStartApi').addEventListener('click',function(){
   doApiLoad(tok);
 });
 
-// ═══ DICTIONNAIRES ID→NOM ═══════════════════════════════════
-var DICT_USERS={}, DICT_CLIENTS={}, DICT_CATS={};
-
-// Dictionnaire statique catégories (IDs confirmés depuis ORGANILOG)
-var DICT_CATEGORY = {
-  '38954': 'Réparation',
-  '29645': 'Maintenance Préventive',
-  '29660': 'Diagnostic/Devis',
-  '29655': 'Installation',
-  '29640': 'Maintenance Curative',
-  '33676': 'CONTROLE/EPREUVE EN CHARGE',
-  '29650': 'Livraison',
-  '11064': 'Contrôle matériel',
-  '48521': 'SAV Externe',
-};
-
-function getProxyBase(){
-  return (localStorage.getItem('sogeco_proxy_url')||'https://sogeco-proxy-qodg.vercel.app').replace(/\/$/,'');
-}
-
-async function loadAllPages(endpoint,extraParams){
-  var all=[],page=1,hasMore=true,tok=gTok(),base=getProxyBase();
-  while(hasMore&&page<=200){
-    var body=Object.assign({account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'asc',endpoint:endpoint},extraParams||{});
-    try{
-      var r=await fetch(base+'/api/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok)break;
-      var j=await r.json();
-      var items=j.results||j.data||[];
-      if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
-      all=all.concat(items);
-      // Utilise count_pages si disponible
-      var totalPages=parseInt(j.count_pages)||0;
-      if(totalPages>0&&page>=totalPages){hasMore=false;}
-      else if(items.length<50){hasMore=false;}
-      page++;
-    }catch(e){hasMore=false;}
-  }
-  return all;
-}
-
-async function loadDictionaries(){
-  try{
-    var res=await Promise.allSettled([
-      loadAllPages('user/read_all'),
-      loadAllPages('client/read_all'),
-      loadAllPages('filiale/read_all'),
-    ]);
-    if(res[0].status==='fulfilled'){
-      res[0].value.forEach(function(u){
-        var nom=((u.prenom||u.firstname||'')+' '+(u.nom||u.lastname||u.name||'')).trim();
-        DICT_USERS[u.id]=nom||u.login||u.email||('User '+u.id);
-      });
-    }
-    if(res[1].status==='fulfilled'){
-      res[1].value.forEach(function(c){
-        DICT_CLIENTS[c.id]=c.nom||c.title||c.name||c.raison_sociale||('Client '+c.id);
-      });
-    }
-    if(res[2].status==='fulfilled'){
-      res[2].value.forEach(function(f){
-        DICT_CATS[f.id]=f.societe||f.title||f.nom||f.name||('Activite '+f.id);
-      });
-    }
-    console.log('Dicts: users='+Object.keys(DICT_USERS).length+' clients='+Object.keys(DICT_CLIENTS).length+' cats='+Object.keys(DICT_CATS).length);
-  }catch(e){console.warn('Dict error:',e.message);}
-}
-
 async function doApiLoad(tok){
-  var all=[],page=1,hasMore=true,base=getProxyBase();
+  var all=[],page=1,hasMore=true;
+  var PROXY_URL=localStorage.getItem('sogeco_proxy_url')||'';
+    var API=PROXY_URL?PROXY_URL+'/api/read_all':'https://sync.organilog.com/api/v3/intervention/read_all.php';
   try{
-    document.getElementById('apiProgSub').textContent='Chargement des references...';
-    await loadDictionaries();
-    document.getElementById('apiProgSub').textContent='Chargement des interventions...';
     while(hasMore&&page<=200){
-      document.getElementById('apiProgSub').textContent='Interventions - page '+page+'...';
-      var r=await fetch(base+'/api/read_all',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({account:'sogeco',token:tok,page_nbr:String(page),
-          order_by:'id',order_sort:'desc',include_report:'0',include_public_page:'0'})});
+      document.getElementById('apiProgSub').textContent='Page '+page+'...';
+      var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'desc',include_report:'0',include_public_page:'0'})});
       if(!r.ok)throw new Error('HTTP '+r.status);
       var j=await r.json();
-      var items=j.results||j.interventions||j.data||[];
+      var items=j.interventions||j.data||j.result||[];
       if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
       items.forEach(function(it){all.push(mapApiRow(it));});
       page++;
-      if(items.length<50)hasMore=false;
-      var pct=Math.min(92,Math.round(all.length/3600*85)+8);
+      var pct=Math.min(90,Math.round(all.length/3500*85)+5);
       document.getElementById('apiProgFill').style.width=pct+'%';
       document.getElementById('apiProgCount').textContent=all.length.toLocaleString('fr-FR')+' interv.';
     }
-    if(all.length===0)throw new Error("Aucune donnee retournee.");
+    if(all.length===0)throw new Error('Aucune donnee retournee.');
     ALL=all;fillSelects();navNow();
     document.getElementById('apiProgFill').style.width='100%';
-    document.getElementById('apiProgSub').textContent='OK - '+all.length+' interventions';
+    document.getElementById('apiProgSub').textContent='OK - '+all.length+' interventions chargees';
     var p=document.getElementById('pill');p.classList.add('ok');
     document.getElementById('ptxt').textContent=all.length.toLocaleString('fr-FR')+' interventions (API Live)';
     setApiPillState('live','API Live');
     setTimeout(function(){hideModal('modalApi');},1800);
   }catch(err){
-    console.error(err);
     document.getElementById('apiProgSub').textContent='Erreur: '+err.message;
     document.getElementById('apiModalBtns').style.display='flex';
     setApiPillState('err','Erreur API');
@@ -1217,43 +1320,23 @@ async function doApiLoad(tok){
 }
 
 function mapApiRow(it){
-  var ds=it.planning_date||'';
-  var de_s=it.done_date||it.planning_date||'';
-  var dt=ds?new Date(ds):null;
-  var de=de_s?new Date(de_s):null;
+  var ds=it.date_start||it.date_begin||it.planned_date||it.date||'';
+  var dt=ds?new Date(ds.replace(' ','T')):null;
   if(dt&&isNaN(dt.getTime()))dt=null;
-  if(de&&isNaN(de.getTime()))de=null;
-  var du=0;
-  try{
-    if(it.done_hour&&it.done_hour!=='00:00'){
-      var p=it.done_hour.split(':');
-      du=parseInt(p[0])*60+parseInt(p[1]);
-    }else if(it.planning_hour&&it.planning_hour!=='00:00'){
-      var p2=it.planning_hour.split(':');
-      du=parseInt(p2[0])*60+parseInt(p2[1]);
-    }
-    if(du>600||du<0)du=0;
-  }catch(e){}
-  var emp='';
-  if(it.fk_user_id&&it.fk_user_id!='0')emp=DICT_USERS[it.fk_user_id]||('User #'+it.fk_user_id);
-  var cl='';
-  if(it.fk_client_id&&it.fk_client_id!='0')cl=DICT_CLIENTS[it.fk_client_id]||('Client #'+it.fk_client_id);
-  var act='';
-  if(it.fk_filiale_id&&it.fk_filiale_id!='0')act=DICT_CATS[it.fk_filiale_id]||('Act. #'+it.fk_filiale_id);
-  var eff=it.is_done==='1'||it.is_done===1||it.is_done===true;
-  var factMap={'0':'? À PLANIFIER','1':'? FACTURÉ','2':'? À FACTURER','3':'?FACTURE SOUS GARANTIE','4':'INCOMPLET'};
-  var fact=factMap[String(it.invoice_type)]||'';
-  var cat=it.fk_category_id&&it.fk_category_id!='0'?(DICT_CATEGORY[it.fk_category_id]||'Cat.'+it.fk_category_id):'';
-  return{
-    n:parseInt(it.id||0)||0,
-    nm:(it.nom||it.title||'').trim().slice(0,60),
-    d:dt?dt.toISOString().slice(0,10):'',
-    _d:dt||new Date(0),de:de||dt||new Date(0),
-    e:emp,ok:eff?1:0,pl:eff?0:1,
-    cat:cat,act:act,f:fact,cl:cl,du:du,
-    noEmp:!emp
-  };
+  var du=0;try{var v=parseFloat(it.duration||it.work_duration||0);if(v>0&&v<600)du=Math.round(v);}catch(e){}
+  var emp=(it.employee_name||it.technician||it.employee||it.assigned_to||'').trim();
+  var st=(it.status||it.state||'').toLowerCase();
+  var eff=st.indexOf('effectu')>=0||st==='done'||it.is_done=='1'||it.is_done===true;
+  var plan=!eff&&(st.indexOf('planif')>=0||st==='planned'||st==='');
+  return{n:parseInt(it.id||0)||0,nm:(it.title||it.name||'').slice(0,60),
+    d:dt?dt.toISOString().slice(0,10):'',_d:dt||new Date(0),de:dt||new Date(0),
+    e:emp,ok:eff?1:0,pl:plan?1:0,
+    cat:(it.category||it.intervention_category||'').trim(),
+    act:(it.activity_type||it.activity||'').trim(),
+    f:(it.billing_status||it.facturation||'').trim(),
+    cl:(it.client_name||it.customer||it.client||'').trim(),du:du};
 }
+
 function setApiPillState(state,txt){
   var p=document.getElementById('apiPill');
   p.style.display='flex';
