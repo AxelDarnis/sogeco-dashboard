@@ -669,18 +669,34 @@ function renderKPIs(F,range){
   var sp=ALL.filter(function(r){return r._d>=lp&&r._d<lun;});
   var diff=sc.length-sp.length;
 
+  // KPI Facturée sous garantie
+  var garantie=F.filter(function(r){return r.f&&r.f.indexOf('GARANTIE')>=0;}).length;
+
   var kpis=[
+    // 1. Total interventions
     {l:'Interventions',u:'total',v:tot.toLocaleString('fr-FR'),s:eff.length+' eff. · '+plan.length+' plan.',c:'bl'},
-    {l:'Taux de clôture',u:'%',v:tx,s:'Sur la période',c:tx>=90?'gn':tx>=75?'am':'rd',pct:true},
+    // 2. Effectuées
     {l:'Effectuées',u:'interv.',v:eff.length.toLocaleString('fr-FR'),s:'Clôturées sur la période',c:'gn'},
-    {l:'Facturées',u:'interv.',v:fact.toLocaleString('fr-FR'),s:'Statut « Facturé »',c:'gn'},
-    {l:'Clôture sem. courante',u:'%',v:txS,s:sc.filter(function(r){return r.ok;}).length+'/'+sc.length+' cette semaine',c:txS>=90?'gn':txS>=75?'am':'rd',pct:true},
-    {l:'Cette semaine',u:'interv.',v:sc.length,s:(diff>=0?'↑+':'')+diff+' vs sem. préc.',c:'bl',trend:diff},
-    {l:'Interv. / jour',u:'moy.',v:perDay,s:'Sur '+jours+' j. ouvrés (Lun-Sam)',c:'pu'},
-    {l:'Durée moy.',u:'/ interv.',v:moy>0?mH+'h'+('0'+mM).slice(-2):'—',s:moy+' min',c:'pu'},
+    // 3. Planifiées restantes
+    {l:'Planifiées',u:'restantes',v:plan.length,s:'À réaliser',c:plan.length>50?'am':'bl'},
+    // 4. Non affectées
     {l:'Non affectées',u:'interv.',v:na,s:'Sans technicien',c:na>0?'rd':'gn'},
-    {l:'À facturer',u:'interv.',v:aFact,s:'En attente',c:aFact>30?'am':'gn'},
-    {l:'Planifiées',u:'restantes',v:plan.length,s:'À réaliser',c:plan.length>100?'am':'bl'},
+    // 5. Taux de clôture
+    {l:'Taux de clôture',u:'%',v:tx,s:'Sur la période',c:tx>=90?'gn':tx>=75?'am':'rd',pct:true},
+    // 6. Clôture sem. courante
+    {l:'Clôture sem. courante',u:'%',v:txS,s:sc.filter(function(r){return r.ok;}).length+'/'+sc.length+' cette semaine',c:txS>=90?'gn':txS>=75?'am':'rd',pct:true},
+    // 7. Cette semaine
+    {l:'Cette semaine',u:'interv.',v:sc.length,s:(diff>=0?'↑+':'')+diff+' vs sem. préc.',c:'bl',trend:diff},
+    // 8. Interv. / jour
+    {l:'Interv. / jour',u:'moy.',v:perDay,s:'Sur '+jours+' j. ouvrés (Lun-Sam)',c:'pu'},
+    // 9. Durée moy.
+    {l:'Durée moy.',u:'/ interv.',v:moy>0?mH+'h'+('0'+mM).slice(-2):'—',s:moy+' min',c:'pu'},
+    // 10. Facturées
+    {l:'Facturées',u:'interv.',v:fact.toLocaleString('fr-FR'),s:'Statut Facturé',c:'gn'},
+    // 11. À facturer
+    {l:'À facturer',u:'interv.',v:aFact,s:'En attente de facturation',c:aFact>30?'am':'gn'},
+    // 12. Facturée sous garantie
+    {l:'Sous garantie',u:'interv.',v:garantie,s:'Statut Facturé sous garantie',c:'bl'},
   ];
   document.getElementById('kgrid').innerHTML=kpis.map(function(k){
     var val=k.pct?'<span class="ku">'+k.u+'</span>'+k.v:''+k.v+'<span class="ku" style="font-size:11px;margin-left:3px">'+k.u+'</span>';
