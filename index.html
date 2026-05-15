@@ -204,6 +204,22 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
 .pill.api-pill.err{color:#f85149;border-color:rgba(248,81,73,.35);background:rgba(248,81,73,.07)}
 .pill.api-pill.loading{color:#d29922;border-color:rgba(210,153,34,.35);background:rgba(210,153,34,.07)}
 
+
+/* ── SECTION EQUIPEMENTS ─────────────────────────────────────── */
+.eq-sep{height:2px;background:linear-gradient(90deg,var(--bl),transparent);margin:24px 0 20px}
+.eq-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r)}
+.eq-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-bottom:16px}
+.eq-cgrid{display:grid;gap:10px;margin-bottom:16px}
+.eq-cgrid2{grid-template-columns:1fr 1fr}
+.eq-cgrid3{grid-template-columns:1fr 1fr 1fr}
+#mapContainer{height:420px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bo);margin-bottom:16px}
+.leaflet-popup-content{font-family:'IBM Plex Sans',sans-serif;font-size:12px;line-height:1.5}
+.leaflet-popup-content b{color:#1B4F8A}
+.eq-loading{text-align:center;padding:40px;color:var(--tx3);font-size:13px}
+.eq-amort-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--tx3);margin-bottom:8px}
+.eq-amort-leg-item{display:flex;align-items:center;gap:5px}
+.eq-amort-dot{width:20px;height:3px;border-radius:2px}
+
 </style>
 </head>
 <body>
@@ -372,6 +388,91 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
       <div class="card">
         <div class="cw" style="height:210px"><canvas id="cCli"></canvas></div>
       </div>
+    </div>
+
+
+    <!-- ═══ SECTION EQUIPEMENTS & CLIENTS ═══ -->
+    <div class="eq-sep"></div>
+    <div class="mb">
+      <div class="sh">
+        <div class="st">Équipements & Clients</div>
+        <span style="font-size:10px;color:var(--tx3)" id="eqLoadStatus">Cliquer sur API Live pour charger les équipements</span>
+      </div>
+
+      <!-- Filtres équipements -->
+      <div class="eq-filters">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="fl">Client</span>
+          <select id="eqFClient" onchange="renderEquip()"><option value="">Tous</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="fl">Type équipement</span>
+          <select id="eqFType" onchange="renderEquip()"><option value="">Tous</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="fl">Équipement</span>
+          <select id="eqFEquip" onchange="renderEquip()"><option value="">Tous</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="fl">N° série</span>
+          <input type="text" id="eqFSerial" placeholder="Rechercher..." style="background:var(--bg3);border:1px solid var(--bo2);color:var(--tx);border-radius:var(--r2);padding:5px 9px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none;width:140px" oninput="renderEquip()">
+        </div>
+        <button class="btn btn-g" style="font-size:10px;padding:3px 9px" onclick="resetEqFilters()">✕ Reset</button>
+      </div>
+
+      <!-- KPIs équipements -->
+      <div class="eq-kpi-grid" id="eqKpiGrid">
+        <div class="kpi"><div class="kl">Équipements</div><div class="kv bl" id="eqKpiTotal">—</div><div class="ks">Total suivi</div></div>
+        <div class="kpi"><div class="kl">Clients équipés</div><div class="kv gn" id="eqKpiClients">—</div><div class="ks">Avec au moins 1 équipement</div></div>
+        <div class="kpi"><div class="kl">Interventions / équip.</div><div class="kv pu" id="eqKpiIntPerEquip">—</div><div class="ks">Moyenne</div></div>
+        <div class="kpi"><div class="kl">Durée moy. / équip.</div><div class="kv pu" id="eqKpiDurEquip">—</div><div class="ks">Toutes interventions</div></div>
+        <div class="kpi"><div class="kl">Sous garantie</div><div class="kv gn" id="eqKpiGarantie">—</div><div class="ks">Garantie active</div></div>
+      </div>
+
+      <!-- Carte géographique -->
+      <div class="mb">
+        <div class="sh"><div class="st">Localisation clients & équipements</div><span style="font-size:10px;color:var(--tx3)">Géocodage par ville · OpenStreetMap</span></div>
+        <div id="mapContainer"><div class="eq-loading">⏳ Chargement de la carte...</div></div>
+      </div>
+
+      <!-- Graphiques équipements -->
+      <div class="eq-cgrid eq-cgrid2 mb">
+        <div class="card">
+          <div class="ct">Interventions par type d'équipement</div>
+          <div class="cs">Répartition par catégorie d'intervention</div>
+          <div class="cw" style="height:220px"><canvas id="cEqType"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ct">Top 10 équipements — nb interventions</div>
+          <div class="cs">Équipements les plus sollicités</div>
+          <div class="cw" style="height:220px"><canvas id="cEqTop"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Histogramme interventions + courbe amortissement -->
+      <div class="card mb">
+        <div class="ct">Historique interventions & valeur résiduelle</div>
+        <div class="cs" id="eqAmortTitle">Sélectionner un équipement pour voir la courbe d'amortissement</div>
+        <div class="eq-amort-legend">
+          <div class="eq-amort-leg-item"><div class="eq-amort-dot" style="background:#4493f8"></div>Interventions/mois</div>
+          <div class="eq-amort-leg-item"><div class="eq-amort-dot" style="background:#f59e0b;border-top:2px dashed #f59e0b"></div>Valeur résiduelle (€)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span class="fl">Équipement</span>
+          <select id="eqAmortSel" style="background:var(--bg3);border:1px solid var(--bo2);color:var(--tx);border-radius:var(--r2);padding:5px 9px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none;min-width:280px" onchange="renderAmort()">
+            <option value="">Sélectionner un équipement...</option>
+          </select>
+        </div>
+        <div class="cw" style="height:260px"><canvas id="cAmort"></canvas></div>
+      </div>
+
+      <!-- Durée par équipement -->
+      <div class="card mb">
+        <div class="ct">Durée cumulée d'intervention par équipement</div>
+        <div class="cs">Top 15 équipements · heures effectuées</div>
+        <div class="cw" style="height:240px"><canvas id="cEqDur"></canvas></div>
+      </div>
+
     </div>
 
   </div>
@@ -1160,6 +1261,368 @@ window.addEventListener('load',function(){
 });
 
 // ── UTILITAIRES CHARTS ──────────────────────────────────────────
+// ══ DONNÉES ÉQUIPEMENTS ══════════════════════════════════════════
+var EQ_ALL = [];        // tous les équipements
+var EQ_INT = [];        // liaisons intervention-équipement
+var EQ_ADDR = {};       // fk_adresse_id -> adresse
+var EQ_GEOCACHE = {};   // ville -> {lat,lng}
+var EQ_MAP = null;      // instance Leaflet
+var EQ_LOADED = false;
+
+// Référentiel prix par type (extrait des ventes SOGECO 2023-2025)
+var EQ_PRIX_REF = {
+  'Portique lavage':    {prix: 140463, amortAns: 10},
+  'Pont 4 colonnes':    {prix: 15075,  amortAns: 10},
+  'Pont ciseaux':       {prix: 9296,   amortAns: 7},
+  'Pont mono colonne':  {prix: 5340,   amortAns: 7},
+  'Compresseur':        {prix: 4563,   amortAns: 5},
+  'Pont 2 colonnes':    {prix: 4149,   amortAns: 5},
+  'Borne lavage':       {prix: 2995,   amortAns: 5},
+};
+
+function detectEquipType(nom) {
+  var n = (nom||'').toUpperCase();
+  if (n.indexOf('PORTIQUE') >= 0 && n.indexOf('LAV') >= 0) return 'Portique lavage';
+  if ((n.indexOf('PONT') >= 0 || n.indexOf('ELEVATEUR') >= 0) && (n.indexOf('4 COL') >= 0 || n.indexOf('4COL') >= 0 || n.indexOf('4 COLONNES') >= 0)) return 'Pont 4 colonnes';
+  if ((n.indexOf('PONT') >= 0 || n.indexOf('ELEVATEUR') >= 0) && (n.indexOf('2 COL') >= 0 || n.indexOf('2COL') >= 0 || n.indexOf('2 COLONNES') >= 0)) return 'Pont 2 colonnes';
+  if ((n.indexOf('PONT') >= 0 || n.indexOf('ELEVATEUR') >= 0) && (n.indexOf('CISEAU') >= 0 || n.indexOf('CISEAUX') >= 0)) return 'Pont ciseaux';
+  if ((n.indexOf('PONT') >= 0 || n.indexOf('ELEVATEUR') >= 0) && n.indexOf('MONO') >= 0) return 'Pont mono colonne';
+  if (n.indexOf('COMPRESSEUR') >= 0) return 'Compresseur';
+  if (n.indexOf('BORNE') >= 0 && n.indexOf('LAV') >= 0) return 'Borne lavage';
+  if (n.indexOf('NETTOYEUR') >= 0) return 'Borne lavage';
+  return 'Autre';
+}
+
+// ── CHARGEMENT ÉQUIPEMENTS ───────────────────────────────────────
+async function loadEquipements() {
+  if (EQ_LOADED) { renderEquip(); return; }
+  var base = getProxyBase(), tok = gTok();
+  if (!tok) return;
+  document.getElementById('eqLoadStatus').textContent = 'Chargement équipements...';
+  try {
+    // 1. Charger équipements
+    var eqs = await loadAllPages('equipement/read_all');
+    EQ_ALL = eqs;
+
+    // 2. Charger liaisons intervention-équipement
+    var ints = await loadAllPages('intervention_equipement/read_all', {last_datetime:'2020-01-01 00:00'});
+    EQ_INT = ints;
+
+    // 3. Charger adresses (par lots)
+    var addrPages = await loadAllPages('adresse/read_all');
+    addrPages.forEach(function(a){ EQ_ADDR[a.id] = a; });
+
+    EQ_LOADED = true;
+    document.getElementById('eqLoadStatus').textContent = EQ_ALL.length + ' équipements · ' + EQ_INT.length + ' liaisons';
+
+    fillEqFilters();
+    renderEquip();
+    renderMap();
+
+  } catch(e) {
+    document.getElementById('eqLoadStatus').textContent = 'Erreur: ' + e.message;
+    console.error('Equip load error:', e);
+  }
+}
+
+// ── FILTRES ÉQUIPEMENTS ──────────────────────────────────────────
+function fillEqFilters() {
+  var clients = {}, types = {}, equips = {};
+  EQ_ALL.forEach(function(e) {
+    var cl = DICT_CLIENTS[e.fk_client_id] || ('Client #' + e.fk_client_id);
+    clients[e.fk_client_id] = cl;
+    var t = detectEquipType(e.nom);
+    types[t] = 1;
+    equips[e.id] = e.nom;
+  });
+  // Client select
+  var sel = document.getElementById('eqFClient');
+  sel.innerHTML = '<option value="">Tous</option>';
+  Object.entries(clients).sort(function(a,b){return a[1].localeCompare(b[1]);}).forEach(function(e){
+    var op = document.createElement('option'); op.value = e[0]; op.textContent = e[1]; sel.appendChild(op);
+  });
+  // Type select
+  var selT = document.getElementById('eqFType');
+  selT.innerHTML = '<option value="">Tous</option>';
+  Object.keys(types).sort().forEach(function(t){
+    var op = document.createElement('option'); op.value = t; op.textContent = t; selT.appendChild(op);
+  });
+  // Équipement select
+  var selE = document.getElementById('eqFEquip');
+  selE.innerHTML = '<option value="">Tous</option>';
+  Object.entries(equips).sort(function(a,b){return a[1].localeCompare(b[1]);}).forEach(function(e){
+    var op = document.createElement('option'); op.value = e[0]; op.textContent = e[1].slice(0,50); selE.appendChild(op);
+  });
+  // Amort selector
+  var selA = document.getElementById('eqAmortSel');
+  selA.innerHTML = '<option value="">Sélectionner un équipement...</option>';
+  Object.entries(equips).sort(function(a,b){return a[1].localeCompare(b[1]);}).forEach(function(e){
+    var op = document.createElement('option'); op.value = e[0]; op.textContent = e[1].slice(0,60); selA.appendChild(op);
+  });
+}
+
+function getFilteredEquip() {
+  var fCl = document.getElementById('eqFClient').value;
+  var fTy = document.getElementById('eqFType').value;
+  var fEq = document.getElementById('eqFEquip').value;
+  var fSr = (document.getElementById('eqFSerial').value||'').toUpperCase();
+  return EQ_ALL.filter(function(e) {
+    if (fCl && e.fk_client_id !== fCl) return false;
+    if (fTy && detectEquipType(e.nom) !== fTy) return false;
+    if (fEq && e.id !== fEq) return false;
+    if (fSr && (e.nom||'').toUpperCase().indexOf(fSr) < 0) return false;
+    return true;
+  });
+}
+
+function resetEqFilters() {
+  ['eqFClient','eqFType','eqFEquip'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('eqFSerial').value = '';
+  renderEquip();
+}
+
+// ── RENDER ÉQUIPEMENTS ───────────────────────────────────────────
+function renderEquip() {
+  if (!EQ_LOADED) return;
+  var feqs = getFilteredEquip();
+  var eqIds = {};
+  feqs.forEach(function(e){ eqIds[String(e.id)] = e; });
+
+  // KPIs
+  var clients = new Set(feqs.map(function(e){return e.fk_client_id;}));
+  var myInts = EQ_INT.filter(function(i){ return eqIds[i.equipement_id]; });
+  var intPerEq = feqs.length > 0 ? (myInts.length / feqs.length).toFixed(1) : 0;
+  var durs = myInts.map(function(i){
+    var h = (i.intervention_done_hour||'00:00').split(':');
+    return parseInt(h[0])*60 + parseInt(h[1]);
+  }).filter(function(d){ return d > 0; });
+  var durMoy = durs.length > 0 ? Math.round(durs.reduce(function(a,b){return a+b;},0)/durs.length) : 0;
+  var now = new Date();
+  var garantie = feqs.filter(function(e){
+    return e.date_guarantee_end && e.date_guarantee_end !== '0000-00-00' && new Date(e.date_guarantee_end) > now;
+  }).length;
+
+  document.getElementById('eqKpiTotal').textContent = feqs.length;
+  document.getElementById('eqKpiClients').textContent = clients.size;
+  document.getElementById('eqKpiIntPerEquip').textContent = intPerEq;
+  document.getElementById('eqKpiDurEquip').textContent = durMoy > 0 ? Math.floor(durMoy/60)+'h'+('0'+durMoy%60).slice(-2) : '—';
+  document.getElementById('eqKpiGarantie').textContent = garantie;
+
+  // Chart type équipement
+  var byType = {};
+  myInts.forEach(function(i){
+    var e = eqIds[String(i.equipement_id)];
+    if (!e) return;
+    var t = detectEquipType(e.nom);
+    byType[t] = (byType[t]||0) + 1;
+  });
+  var typeEntries = Object.entries(byType).sort(function(a,b){return b[1]-a[1];});
+  dc('cEqType');
+  CH.cEqType = new Chart(document.getElementById('cEqType'), {
+    type: 'doughnut',
+    data: { labels: typeEntries.map(function(e){return e[0];}), datasets: [{ data: typeEntries.map(function(e){return e[1];}), backgroundColor: ['#4493f8','#3fb950','#d29922','#bc8cff','#f85149','#14b8a6','#39d353'], borderWidth: 0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:'#768390',font:{size:10},boxWidth:8,padding:7} } } }
+  });
+
+  // Chart top équipements
+  var byEq = {};
+  myInts.forEach(function(i){
+    var e = eqIds[String(i.equipement_id)];
+    if (!e) return;
+    var k = e.nom.slice(0,35);
+    byEq[k] = (byEq[k]||0) + 1;
+  });
+  var topEq = Object.entries(byEq).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  dc('cEqTop');
+  CH.cEqTop = new Chart(document.getElementById('cEqTop'), {
+    type: 'bar',
+    data: { labels: topEq.map(function(e){return e[0];}), datasets: [{ data: topEq.map(function(e){return e[1];}), backgroundColor: '#4493f8', borderRadius: 3 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}, y:{ticks:{color:'#768390',font:{size:9}},grid:{display:false}} } }
+  });
+
+  // Chart durée par équipement
+  var durByEq = {};
+  myInts.forEach(function(i){
+    var e = eqIds[String(i.equipement_id)];
+    if (!e) return;
+    var k = e.nom.slice(0,35);
+    var h = (i.intervention_done_hour||'00:00').split(':');
+    var min = parseInt(h[0])*60 + parseInt(h[1]);
+    durByEq[k] = (durByEq[k]||0) + min;
+  });
+  var topDur = Object.entries(durByEq).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+  dc('cEqDur');
+  CH.cEqDur = new Chart(document.getElementById('cEqDur'), {
+    type: 'bar',
+    data: { labels: topDur.map(function(e){return e[0];}), datasets: [{ label:'Heures', data: topDur.map(function(e){return Math.round(e[1]/60*10)/10;}), backgroundColor: '#bc8cff', borderRadius: 3 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'Heures',color:'#444c56',font:{size:9}}}, y:{ticks:{color:'#768390',font:{size:9}},grid:{display:false}} } }
+  });
+}
+
+// ── COURBE AMORTISSEMENT ─────────────────────────────────────────
+function renderAmort() {
+  var eqId = document.getElementById('eqAmortSel').value;
+  if (!eqId) { dc('cAmort'); return; }
+  var eq = EQ_ALL.find(function(e){ return e.id === eqId; });
+  if (!eq) return;
+
+  var type = detectEquipType(eq.nom);
+  var ref = EQ_PRIX_REF[type] || {prix: 5000, amortAns: 7};
+  var prix = ref.prix;
+  var amortAns = ref.amortAns;
+  var amortMois = amortAns * 12;
+  var amortParMois = prix / amortMois;
+
+  // Date de départ : date_install ou date_buy ou date d'ajout
+  var startStr = eq.date_install !== '0000-00-00' ? eq.date_install :
+                 eq.date_buy !== '0000-00-00' ? eq.date_buy :
+                 eq.added_date ? eq.added_date.slice(0,10) : null;
+  if (!startStr) { document.getElementById('eqAmortTitle').textContent = 'Date d\'installation inconnue — utilise la date de création'; startStr = eq.added_date ? eq.added_date.slice(0,10) : '2020-01-01'; }
+
+  var start = new Date(startStr);
+  var end = new Date(start);
+  end.setFullYear(end.getFullYear() + amortAns);
+  var today = new Date();
+
+  // Générer les mois
+  var labels = [], valeurs = [], intByMonth = {};
+  var cur = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  // Compter interventions par mois pour cet équipement
+  var myInts = EQ_INT.filter(function(i){ return String(i.equipement_id) === String(eqId); });
+  myInts.forEach(function(i){
+    var d = i.intervention_done_date || i.intervention_planning_date || '';
+    if (d && d !== '0000-00-00') {
+      var k = d.slice(0,7);
+      intByMonth[k] = (intByMonth[k]||0) + 1;
+    }
+  });
+
+  var intData = [];
+  while (cur <= end) {
+    var k = cur.getFullYear() + '-' + ('0'+(cur.getMonth()+1)).slice(-2);
+    var moisDepuisDebut = (cur.getFullYear() - start.getFullYear())*12 + (cur.getMonth() - start.getMonth());
+    var valRes = Math.max(0, prix - moisDepuisDebut * amortParMois);
+    labels.push(k);
+    valeurs.push(Math.round(valRes));
+    intData.push(intByMonth[k] || 0);
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  // Ligne verticale = aujourd'hui
+  var todayKey = today.getFullYear()+'-'+('0'+(today.getMonth()+1)).slice(-2);
+  var todayIdx = labels.indexOf(todayKey);
+
+  document.getElementById('eqAmortTitle').textContent =
+    eq.nom + ' · ' + type + ' · Prix réf. ' + prix.toLocaleString('fr-FR') + '€ · Amortissement ' + amortAns + ' ans';
+
+  dc('cAmort');
+  CH.cAmort = new Chart(document.getElementById('cAmort'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { type:'bar', label:'Interventions', data: intData, backgroundColor:'rgba(68,147,248,0.6)', borderRadius:2, yAxisID:'y' },
+        { type:'line', label:'Valeur résiduelle (€)', data: valeurs, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)',
+          borderWidth:2, borderDash:[6,3], pointRadius:0, fill:true, yAxisID:'y2', tension:0 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{color:'#768390',font:{size:10},boxWidth:10,padding:10}},
+        annotation: todayIdx >= 0 ? {annotations:{line1:{type:'line',xMin:todayIdx,xMax:todayIdx,borderColor:'#3fb950',borderWidth:2,borderDash:[4,4],label:{content:'Auj.',display:true,color:'#3fb950',font:{size:9}}}}} : {}
+      },
+      scales:{
+        x:{ticks:{color:'#444c56',font:{size:9},maxRotation:45},grid:{display:false}},
+        y:{position:'left',ticks:{color:'#4493f8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'Interventions',color:'#4493f8',font:{size:9}}},
+        y2:{position:'right',ticks:{color:'#f59e0b',font:{size:9},callback:function(v){return v.toLocaleString('fr-FR')+'€';}},grid:{display:false},title:{display:true,text:'Valeur (€)',color:'#f59e0b',font:{size:9}}}
+      }
+    }
+  });
+}
+
+// ── CARTE LEAFLET ────────────────────────────────────────────────
+async function geocodeVille(ville, cp) {
+  var key = (cp||'') + '_' + (ville||'');
+  if (EQ_GEOCACHE[key]) return EQ_GEOCACHE[key];
+  // Default Guadeloupe coords if geocoding fails
+  var defaultCoords = {lat: 16.25, lng: -61.55};
+  try {
+    var q = encodeURIComponent((ville||'') + ', ' + (cp||'97100') + ', Guadeloupe, France');
+    var r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + q + '&limit=1', {
+      headers: {'Accept-Language':'fr', 'User-Agent':'SOGECO-GMAO/1.0'}
+    });
+    var data = await r.json();
+    if (data && data.length > 0) {
+      var coords = {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
+      EQ_GEOCACHE[key] = coords;
+      return coords;
+    }
+  } catch(e) {}
+  EQ_GEOCACHE[key] = defaultCoords;
+  return defaultCoords;
+}
+
+async function renderMap() {
+  var mapDiv = document.getElementById('mapContainer');
+  mapDiv.innerHTML = '<div id="leafletMap" style="height:100%;width:100%"></div>';
+
+  // Initialiser Leaflet
+  if (typeof L === 'undefined') {
+    mapDiv.innerHTML = '<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">⚠️ Carte disponible uniquement en ligne (GitHub Pages). Leaflet non chargé en local.</div>';
+    return;
+  }
+  if (EQ_MAP) { EQ_MAP.remove(); EQ_MAP = null; }
+  EQ_MAP = L.map('leafletMap').setView([16.25, -61.55], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 18
+  }).addTo(EQ_MAP);
+
+  // Regrouper équipements par adresse client
+  var addrEquips = {};
+  EQ_ALL.forEach(function(e) {
+    var aId = e.fk_adresse_id;
+    if (!addrEquips[aId]) addrEquips[aId] = [];
+    addrEquips[aId].push(e);
+  });
+
+  // Géocoder et placer marqueurs (par lots pour éviter rate limit Nominatim)
+  var addrIds = Object.keys(addrEquips);
+  var placed = 0;
+  for (var i = 0; i < addrIds.length; i++) {
+    var aId = addrIds[i];
+    var addr = EQ_ADDR[aId];
+    if (!addr) continue;
+    var ville = addr.ville || 'Guadeloupe';
+    var cp = addr.code_postal || '97100';
+    var coords = await geocodeVille(ville, cp);
+    // Petit décalage aléatoire pour éviter la superposition
+    var lat = coords.lat + (Math.random()-0.5)*0.002;
+    var lng = coords.lng + (Math.random()-0.5)*0.002;
+    var equips = addrEquips[aId];
+    var cl = DICT_CLIENTS[equips[0].fk_client_id] || 'Client inconnu';
+    var popupContent = '<b>' + cl + '</b><br>' + (addr.adresse||'') + '<br>' + cp + ' ' + ville +
+      '<br><br><b>' + equips.length + ' équipement' + (equips.length>1?'s':'') + '</b><br>' +
+      equips.slice(0,5).map(function(e){ return '• ' + e.nom.slice(0,40); }).join('<br>') +
+      (equips.length > 5 ? '<br>...' : '');
+    var color = equips.length >= 5 ? '#f85149' : equips.length >= 3 ? '#f59e0b' : '#4493f8';
+    var marker = L.circleMarker([lat, lng], {
+      radius: Math.min(6 + equips.length * 2, 18),
+      fillColor: color, color: '#fff', weight: 1.5,
+      opacity: 1, fillOpacity: 0.85
+    }).addTo(EQ_MAP);
+    marker.bindPopup(popupContent);
+    placed++;
+    // Pause toutes les 5 requêtes pour respecter Nominatim
+    if (i % 5 === 4) await new Promise(function(r){ setTimeout(r, 1000); });
+  }
+  console.log('Map: ' + placed + ' marqueurs placés');
+}
+
+
 function dc(id){
   if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];}
 }
@@ -1308,6 +1771,7 @@ async function doApiLoad(tok){
     }
 
     fillSelects(); navNow();
+    loadEquipements();
     document.getElementById('apiProgFill').style.width = '100%';
     var p = document.getElementById('pill'); p.classList.add('ok');
     document.getElementById('ptxt').textContent = ALL.length.toLocaleString('fr-FR')+' interventions (API Live)';
