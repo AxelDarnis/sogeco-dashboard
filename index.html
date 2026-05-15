@@ -1131,7 +1131,7 @@ function dc(id){
 // ── CHARGEMENT INCREMENTAL ──────────────────────────────────────
 var CACHE_KEY = 'sogeco_cache_data';
 var CACHE_DATE_KEY = 'sogeco_cache_date';
-var CACHE_VERSION = 'v6';
+var CACHE_VERSION = 'v7'; // bump to clear old bad cache
 
 function saveCache(data){
   try{
@@ -1467,21 +1467,34 @@ document.getElementById('btnStartApi').addEventListener('click',function(){
 
 
 function mapApiRow(it){
-  var ds=it.date_start||it.date_begin||it.planned_date||it.date||'';
-  var dt=ds?new Date(ds.replace(' ','T')):null;
+  // Champs réels ORGANILOG v3
+  var ds=it.planning_date||'';
+  var de_s=it.done_date||it.planning_date||'';
+  var dt=ds?new Date(ds):null;
+  var de=de_s?new Date(de_s):null;
   if(dt&&isNaN(dt.getTime()))dt=null;
-  var du=0;try{var v=parseFloat(it.duration||it.work_duration||0);if(v>0&&v<600)du=Math.round(v);}catch(e){}
-  var emp=(it.employee_name||it.technician||it.employee||it.assigned_to||'').trim();
-  var st=(it.status||it.state||'').toLowerCase();
-  var eff=st.indexOf('effectu')>=0||st==='done'||it.is_done=='1'||it.is_done===true;
-  var plan=!eff&&(st.indexOf('planif')>=0||st==='planned'||st==='');
-  return{n:parseInt(it.id||0)||0,nm:(it.title||it.name||'').slice(0,60),
-    d:dt?dt.toISOString().slice(0,10):'',_d:dt||new Date(0),de:dt||new Date(0),
-    e:emp,ok:eff?1:0,pl:plan?1:0,
-    cat:(it.category||it.intervention_category||'').trim(),
-    act:(it.activity_type||it.activity||'').trim(),
-    f:(it.billing_status||it.facturation||'').trim(),
-    cl:(it.client_name||it.customer||it.client||'').trim(),du:du};
+  if(de&&isNaN(de.getTime()))de=null;
+  var du=0;
+  try{
+    if(it.done_hour&&it.done_hour!=='00:00'){var p=it.done_hour.split(':');du=parseInt(p[0])*60+parseInt(p[1]);}
+    else if(it.planning_hour&&it.planning_hour!=='00:00'){var p2=it.planning_hour.split(':');du=parseInt(p2[0])*60+parseInt(p2[1]);}
+    if(du>600||du<0)du=0;
+  }catch(e){}
+  var emp=''; if(it.fk_user_id&&it.fk_user_id!='0')emp=DICT_USERS[it.fk_user_id]||('User #'+it.fk_user_id);
+  var cl='';  if(it.fk_client_id&&it.fk_client_id!='0')cl=DICT_CLIENTS[it.fk_client_id]||('Client #'+it.fk_client_id);
+  var act=''; if(it.fk_filiale_id&&it.fk_filiale_id!='0')act=DICT_CATS[it.fk_filiale_id]||('Act. #'+it.fk_filiale_id);
+  var eff=it.is_done==='1'||it.is_done===1||it.is_done===true;
+  var factFb={'0':'À Planifier','1':'Facturé','2':'À Facturer','3':'Sous Garantie','4':'Incomplet'};
+  var fact=DICT_FACTURATION[it.id]||factFb[String(it.invoice_type)]||'';
+  var cat=it.fk_category_id&&it.fk_category_id!='0'?(DICT_CATEGORY[it.fk_category_id]||'Cat.'+it.fk_category_id):'';
+  return{
+    n:parseInt(it.id||0)||0,
+    nm:(it.nom||it.title||'').trim().slice(0,60),
+    d:dt?dt.toISOString().slice(0,10):'',
+    _d:dt||new Date(0),de:de||dt||new Date(0),
+    e:emp,ok:eff?1:0,pl:eff?0:1,
+    cat:cat,act:act,f:fact,cl:cl,du:du,noEmp:!emp
+  };
 }
 
 function setApiPillState(state,txt){
