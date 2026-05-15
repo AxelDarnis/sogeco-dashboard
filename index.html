@@ -1122,6 +1122,171 @@ window.addEventListener('load',function(){
     }
   },2000);
 });
+
+// ── UTILITAIRES CHARTS ──────────────────────────────────────────
+function dc(id){
+  if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];}
+}
+
+// ── CHARGEMENT INCREMENTAL ──────────────────────────────────────
+var CACHE_KEY = 'sogeco_cache_data';
+var CACHE_DATE_KEY = 'sogeco_cache_date';
+var CACHE_VERSION = 'v6';
+
+function saveCache(data){
+  try{
+    var payload = JSON.stringify({v:CACHE_VERSION, date:new Date().toISOString(), data:data});
+    localStorage.setItem(CACHE_KEY, payload);
+    localStorage.setItem(CACHE_DATE_KEY, new Date().toISOString());
+    console.log('Cache saved:', data.length, 'interventions');
+  }catch(e){console.warn('Cache save failed (localStorage full?):', e.message);}
+}
+
+function loadCache(){
+  try{
+    var raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    var payload = JSON.parse(raw);
+    if(payload.v !== CACHE_VERSION) return null;
+    return payload;
+  }catch(e){return null;}
+}
+
+function getCacheDate(){
+  var d = localStorage.getItem(CACHE_DATE_KEY);
+  return d ? new Date(d) : null;
+}
+
+function formatLastDatetime(date){
+  // Format YYYY-MM-DD HH:MM for ORGANILOG last_datetime param
+  var pad = function(n){return ('0'+n).slice(-2);};
+  return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())
+    +' '+pad(date.getHours())+':'+pad(date.getMinutes());
+}
+
+async function doIncrementalLoad(tok, lastDate){
+  // Charge uniquement les interventions modifiées depuis lastDate
+  var base = getProxyBase();
+  var newItems = [], page = 1, hasMore = true;
+  var lastDt = formatLastDatetime(new Date(lastDate.getTime() - 60*60*1000)); // -1h de marge
+  document.getElementById('apiProgSub').textContent = 'Mise à jour depuis '+lastDt+'...';
+
+  while(hasMore && page <= 50){
+    var r = await fetch(base+'/api/read_all', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({account:'sogeco', token:tok,
+        page_nbr:String(page), order_by:'last_update', order_sort:'desc',
+        last_datetime: lastDt,
+        include_report:'0', include_public_page:'0'})
+    });
+    if(!r.ok) break;
+    var j = await r.json();
+    var items = j.results||[];
+    if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
+    newItems = newItems.concat(items.map(mapApiRow));
+    page++;
+    if(items.length < 50) hasMore = false;
+    document.getElementById('apiProgSub').textContent = newItems.length+' nouvelles/modifiées...';
+    document.getElementById('apiProgFill').style.width = Math.min(80, page*10)+'%';
+    document.getElementById('apiProgCount').textContent = newItems.length+' màj';
+  }
+  return newItems;
+}
+
+async function doFullLoad(tok){
+  // Charge toutes les interventions depuis le début
+  var base = getProxyBase();
+  var all = [], page = 1, hasMore = true;
+
+  document.getElementById('apiProgSub').textContent = 'Chargement références...';
+  await loadDictionaries();
+  document.getElementById('apiProgSub').textContent = 'Chargement facturation...';
+  await loadCustomFieldValues(tok, base);
+  document.getElementById('apiProgSub').textContent = 'Chargement interventions...';
+
+  while(hasMore && page <= 200){
+    document.getElementById('apiProgSub').textContent = 'Interventions page '+page+'...';
+    var r = await fetch(base+'/api/read_all', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({account:'sogeco', token:tok,
+        page_nbr:String(page), order_by:'id', order_sort:'desc',
+        include_report:'0', include_public_page:'0'})
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var j = await r.json();
+    var items = j.results||[];
+    if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
+    all = all.concat(items.map(mapApiRow));
+    page++;
+    if(items.length < 50) hasMore = false;
+    var pct = Math.min(92, Math.round(all.length/3800*85)+8);
+    document.getElementById('apiProgFill').style.width = pct+'%';
+    document.getElementById('apiProgCount').textContent = all.length.toLocaleString('fr-FR')+' interv.';
+  }
+  return all;
+}
+
+async function doApiLoad(tok){
+  var base = getProxyBase();
+  try{
+    var cache = loadCache();
+    var cacheDate = getCacheDate();
+    var useIncremental = cache && cacheDate && (new Date() - cacheDate < 7*24*60*60*1000); // cache < 7 jours
+
+    if(useIncremental){
+      // Chargement incrémental
+      document.getElementById('apiProgSub').textContent = 'Cache trouvé ('+cache.data.length+' interv.) - Mise à jour...';
+      await loadDictionaries();
+
+      var newItems = await doIncrementalLoad(tok, cacheDate);
+
+      // Fusionner : remplacer les existantes, ajouter les nouvelles
+      var existingMap = {};
+      cache.data.forEach(function(r){ existingMap[r.n] = r; });
+      newItems.forEach(function(r){ existingMap[r.n] = r; }); // écrase ou ajoute
+      var merged = Object.values(existingMap);
+      merged.sort(function(a,b){ return b.n - a.n; });
+
+      ALL = merged;
+      saveCache(merged);
+      document.getElementById('apiProgSub').textContent = '✓ '+newItems.length+' màj · '+merged.length+' total';
+
+    } else {
+      // Chargement complet
+      var all = await doFullLoad(tok);
+      if(all.length === 0) throw new Error('Aucune donnée retournée.');
+      ALL = all;
+      saveCache(all);
+      document.getElementById('apiProgSub').textContent = '✓ '+all.length+' interventions chargées';
+    }
+
+    fillSelects(); navNow();
+    document.getElementById('apiProgFill').style.width = '100%';
+    var p = document.getElementById('pill'); p.classList.add('ok');
+    document.getElementById('ptxt').textContent = ALL.length.toLocaleString('fr-FR')+' interventions (API Live)';
+    setApiPillState('live','API Live ✓');
+
+    // Afficher date dernier sync
+    var syncDate = new Date().toLocaleString('fr-FR');
+    document.getElementById('apiProgSub').textContent = 'Sync: '+syncDate+' · '+ALL.length+' interventions';
+
+    setTimeout(function(){hideModal('modalApi');}, 2000);
+
+  }catch(err){
+    console.error('API Load error:', err);
+    document.getElementById('apiProgSub').textContent = 'Erreur: '+err.message;
+    document.getElementById('apiModalBtns').style.display = 'flex';
+    setApiPillState('err','Erreur API');
+  }
+}
+
+// Bouton rechargement complet
+function forceFullReload(){
+  localStorage.removeItem(CACHE_KEY);
+  localStorage.removeItem(CACHE_DATE_KEY);
+  var tok = gTok();
+  if(tok) document.getElementById('btnApiLive').click();
+}
 </script>
 
 <!-- MODAL CONFIG ADMIN -->
@@ -1289,43 +1454,6 @@ document.getElementById('btnStartApi').addEventListener('click',function(){
   doApiLoad(tok);
 });
 
-async function doApiLoad(tok){
-  var all=[],page=1,hasMore=true;
-  var API=getProxyBase()+'/api/read_all';
-  try{
-    document.getElementById('apiProgSub').textContent='Chargement références...';
-    await loadDictionaries();
-    document.getElementById('apiProgSub').textContent='Chargement facturation...';
-    await loadCustomFieldValues(tok, getProxyBase());
-    document.getElementById('apiProgSub').textContent='Chargement interventions...';
-    while(hasMore&&page<=200){
-      document.getElementById('apiProgSub').textContent='Interventions page '+page+'...';
-      var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'desc',include_report:'0',include_public_page:'0'})});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      var j=await r.json();
-      var items=j.results||j.interventions||j.data||j.result||[];
-      if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
-      items.forEach(function(it){all.push(mapApiRow(it));});
-      page++;
-      var pct=Math.min(90,Math.round(all.length/3500*85)+5);
-      document.getElementById('apiProgFill').style.width=pct+'%';
-      document.getElementById('apiProgCount').textContent=all.length.toLocaleString('fr-FR')+' interv.';
-    }
-    if(all.length===0)throw new Error('Aucune donnee retournee.');
-    ALL=all;fillSelects();navNow();
-    document.getElementById('apiProgFill').style.width='100%';
-    document.getElementById('apiProgSub').textContent='OK - '+all.length+' interventions chargees';
-    var p=document.getElementById('pill');p.classList.add('ok');
-    document.getElementById('ptxt').textContent=all.length.toLocaleString('fr-FR')+' interventions (API Live)';
-    setApiPillState('live','API Live');
-    setTimeout(function(){hideModal('modalApi');},1800);
-  }catch(err){
-    document.getElementById('apiProgSub').textContent='Erreur: '+err.message;
-    document.getElementById('apiModalBtns').style.display='flex';
-    setApiPillState('err','Erreur API');
-  }
-}
 
 function mapApiRow(it){
   var ds=it.date_start||it.date_begin||it.planned_date||it.date||'';
