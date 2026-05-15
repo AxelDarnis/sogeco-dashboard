@@ -1488,10 +1488,15 @@ document.getElementById('btnStartApi').addEventListener('click',function(){
 
 function mapApiRow(it){
   // Champs réels ORGANILOG v3
-  var ds=it.planning_date||'';
-  var de_s=it.done_date||it.planning_date||'';
-  var dt=ds?new Date(ds):null;
-  var de=de_s?new Date(de_s):null;
+  // done_date = date réelle d'exécution (comme ORGANILOG)
+  // planning_date = date planifiée (fallback si pas encore effectuée)
+  var done_s=it.done_date&&it.done_date!=='0000-00-00'?it.done_date:'';
+  var plan_s=it.planning_date&&it.planning_date!=='0000-00-00'?it.planning_date:'';
+  var eff_pre=it.is_done==='1'||it.is_done===1||it.is_done===true;
+  // Date principale : done_date si effectuée, planning_date si planifiée
+  var primary_s=eff_pre?(done_s||plan_s):plan_s;
+  var dt=primary_s?new Date(primary_s):null;
+  var de=done_s?new Date(done_s):null;
   if(dt&&isNaN(dt.getTime()))dt=null;
   if(de&&isNaN(de.getTime()))de=null;
   var du=0;
@@ -1503,7 +1508,7 @@ function mapApiRow(it){
   var emp=''; if(it.fk_user_id&&it.fk_user_id!='0')emp=DICT_USERS[it.fk_user_id]||('User #'+it.fk_user_id);
   var cl='';  if(it.fk_client_id&&it.fk_client_id!='0')cl=DICT_CLIENTS[it.fk_client_id]||('Client #'+it.fk_client_id);
   var act=''; if(it.fk_filiale_id&&it.fk_filiale_id!='0')act=DICT_CATS[it.fk_filiale_id]||('Act. #'+it.fk_filiale_id);
-  var eff=it.is_done==='1'||it.is_done===1||it.is_done===true;
+  var eff=eff_pre; // déjà calculé
   var factFb={'0':'À Planifier','1':'Facturé','2':'À Facturer','3':'Sous Garantie','4':'Incomplet'};
   var fact=DICT_FACTURATION[it.id]||factFb[String(it.invoice_type)]||'';
   var cat=it.fk_category_id&&it.fk_category_id!='0'?(DICT_CATEGORY[it.fk_category_id]||'Cat.'+it.fk_category_id):'';
