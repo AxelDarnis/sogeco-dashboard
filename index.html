@@ -1058,24 +1058,44 @@ async function loadAllPages(endpoint,extraParams){
 }
 
 async function loadCustomFieldValues(tok,base){
+  // Parallélisation par blocs de 10 pages simultanées
   var found=0;
-  for(var pg=1500;pg<=1897;pg++){
+  var BATCH=10; // 10 appels simultanés
+  var pg=1500;
+  var maxPg=1897;
+  var done=false;
+
+  async function fetchPage(page){
     try{
-      var body={account:'sogeco',token:tok,page_nbr:String(pg),order_by:'id',order_sort:'asc',
+      var body={account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'asc',
                 last_datetime:'2000-01-01 00:00',endpoint:'custom_field_value/read_all'};
-      var r=await fetch(base+'/api/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok)break;
+      var r=await fetch(base+'/api/proxy',{method:'POST',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!r.ok)return null;
       var j=await r.json();
-      if(!j.results||j.results.length===0)break;
-      j.results.forEach(function(v){
+      return j.results||null;
+    }catch(e){return null;}
+  }
+
+  while(pg<=maxPg && !done){
+    // Lance BATCH pages en parallèle
+    var pages=[];
+    for(var i=0;i<BATCH&&pg+i<=maxPg;i++) pages.push(pg+i);
+    var results=await Promise.all(pages.map(fetchPage));
+
+    for(var ri=0;ri<results.length;ri++){
+      var items=results[ri];
+      if(!items||items.length===0){done=true;break;}
+      items.forEach(function(v){
         if(v.link_table_name!=='intervention'||!v.valeur)return;
         if(v.fk_unite_id==='243122'){DICT_FACTURATION[v.fk_column_id]=v.valeur;found++;}
         if(v.fk_unite_id==='92715')DICT_CAT_CUSTOM[v.fk_column_id]=v.valeur;
       });
-      if(j.results.length<50)break;
-    }catch(e){break;}
+      if(items.length<50){done=true;break;}
+    }
+    pg+=BATCH;
   }
-  console.log('Fact loaded:',found);
+  console.log('Fact loaded:',found,'valeurs');
 }
 
 async function loadDictionaries(){
