@@ -1142,12 +1142,23 @@ function saveCache(data){
   }catch(e){console.warn('Cache save failed (localStorage full?):', e.message);}
 }
 
+function restoreDates(rows){
+  // JSON.parse converts Date objects to strings - restore them
+  return rows.map(function(r){
+    r._d = r.d ? new Date(r.d) : new Date(0);
+    r.de = r.de ? new Date(r.de) : r._d;
+    return r;
+  });
+}
+
 function loadCache(){
   try{
     var raw = localStorage.getItem(CACHE_KEY);
     if(!raw) return null;
     var payload = JSON.parse(raw);
     if(payload.v !== CACHE_VERSION) return null;
+    // Restore Date objects after JSON.parse
+    payload.data = restoreDates(payload.data);
     return payload;
   }catch(e){return null;}
 }
@@ -1247,7 +1258,7 @@ async function doApiLoad(tok){
       var merged = Object.values(existingMap);
       merged.sort(function(a,b){ return b.n - a.n; });
 
-      ALL = merged;
+      ALL = restoreDates(merged);
       saveCache(merged);
       document.getElementById('apiProgSub').textContent = '✓ '+newItems.length+' màj · '+merged.length+' total';
 
