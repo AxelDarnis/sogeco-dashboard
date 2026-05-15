@@ -1226,6 +1226,7 @@ function doPwdCheck(){
   var tok=gTok();
   document.getElementById('cfgToken').value=tok;
   document.getElementById('cfgProxy').value=localStorage.getItem('sogeco_proxy_url')||'';
+  document.getElementById('cfgProxy').value=localStorage.getItem('sogeco_proxy_url')||'';
   document.getElementById('cfgStatus').textContent=tok?'Token enregistre':'Aucun token';
 }
 document.getElementById('btnCheckPwd').addEventListener('click',doPwdCheck);
@@ -1238,6 +1239,9 @@ document.getElementById('btnSaveCfg').addEventListener('click',function(){
   if(!tok){document.getElementById('tokenErr').textContent='Token requis.';return;}
   document.getElementById('tokenErr').textContent='';
   localStorage.setItem(TK,tok);
+  var proxy=document.getElementById('cfgProxy').value.trim().replace(/\/$/,'');
+  if(proxy) localStorage.setItem('sogeco_proxy_url',proxy);
+  else localStorage.removeItem('sogeco_proxy_url');
   if(np){
     if(np.length<6){document.getElementById('tokenErr').textContent='Mot de passe trop court (6 min).';return;}
     localStorage.setItem(AH,hPwd(np));
@@ -1287,16 +1291,20 @@ document.getElementById('btnStartApi').addEventListener('click',function(){
 
 async function doApiLoad(tok){
   var all=[],page=1,hasMore=true;
-  var PROXY_URL=localStorage.getItem('sogeco_proxy_url')||'';
-    var API=PROXY_URL?PROXY_URL+'/api/read_all':'https://sync.organilog.com/api/v3/intervention/read_all.php';
+  var API=getProxyBase()+'/api/read_all';
   try{
+    document.getElementById('apiProgSub').textContent='Chargement références...';
+    await loadDictionaries();
+    document.getElementById('apiProgSub').textContent='Chargement facturation...';
+    await loadCustomFieldValues(tok, getProxyBase());
+    document.getElementById('apiProgSub').textContent='Chargement interventions...';
     while(hasMore&&page<=200){
-      document.getElementById('apiProgSub').textContent='Page '+page+'...';
+      document.getElementById('apiProgSub').textContent='Interventions page '+page+'...';
       var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({account:'sogeco',token:tok,page_nbr:String(page),order_by:'id',order_sort:'desc',include_report:'0',include_public_page:'0'})});
       if(!r.ok)throw new Error('HTTP '+r.status);
       var j=await r.json();
-      var items=j.interventions||j.data||j.result||[];
+      var items=j.results||j.interventions||j.data||j.result||[];
       if(!Array.isArray(items)||items.length===0){hasMore=false;break;}
       items.forEach(function(it){all.push(mapApiRow(it));});
       page++;
