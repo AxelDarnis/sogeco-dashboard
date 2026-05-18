@@ -354,20 +354,20 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
 <!-- PAGE SAV EXTERNE -->
 <div class="page" id="pageExt">
   <div class="page-hdr"><div class="page-dot" style="background:var(--bl)"></div>SAV Externe — Lavage &amp; Garage</div>
-  <div class="mb"><div class="sh"><div class="st">KPI SAV Externe</div><span style="font-size:10px;color:var(--tx3)" id="periodLblExt"></span></div><div class="kg" id="kpiGrid"></div></div>
+  <div class="mb"><div class="sh"><div class="st">KPI SAV Externe</div><span style="font-size:10px;color:var(--tx3)" id="periodLblExt"></span></div><div class="kg" id="kpiGridExt"></div></div>
   <div class="mb"><div class="sh"><div class="st">Évolution SAV Externe</div></div>
     <div class="cg cg2">
-      <div class="card"><div class="ct">Par jour</div><div class="cs" id="daySubLbl"></div><div class="cw" style="height:180px"><canvas id="cDay"></canvas></div></div>
-      <div class="card"><div class="ct">Par mois</div><div class="cw" style="height:180px"><canvas id="cMens"></canvas></div></div>
+      <div class="card"><div class="ct">Par jour</div><div class="cs" id="daySubLblExt"></div><div class="cw" style="height:180px"><canvas id="cDayExt"></canvas></div></div>
+      <div class="card"><div class="ct">Par mois</div><div class="cw" style="height:180px"><canvas id="cMensExt"></canvas></div></div>
     </div>
   </div>
-  <div class="mb"><div class="sh"><div class="st">Taux de clôture</div></div><div class="card" id="wkCard" style="padding:12px 18px"></div></div>
+  <div class="mb"><div class="sh"><div class="st">Taux de clôture</div></div><div class="card" id="wkCardExt" style="padding:12px 18px"></div></div>
   <div class="cg cg2 mb">
-    <div class="card"><div class="ct">Catégories</div><div class="cw" style="height:200px"><canvas id="cCat"></canvas></div></div>
-    <div class="card"><div class="ct">Top clients SAV Externe</div><div class="cw" style="height:200px"><canvas id="cCli"></canvas></div></div>
+    <div class="card"><div class="ct">Catégories</div><div class="cw" style="height:200px"><canvas id="cCatExt"></canvas></div></div>
+    <div class="card"><div class="ct">Top clients SAV Externe</div><div class="cw" style="height:200px"><canvas id="cCliExt"></canvas></div></div>
   </div>
-  <div class="mb"><div class="sh"><div class="st">Performance techniciens</div><span style="font-size:10px;color:var(--tx3)" id="techHint"></span></div>
-    <div class="tw"><table><thead><tr><th>Technicien</th><th>Total</th><th>Effectuées</th><th>Taux clôture</th><th>Durée moy.</th><th>Cette semaine</th><th>À facturer</th><th>Statut</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  <div class="mb"><div class="sh"><div class="st">Performance techniciens</div><span style="font-size:10px;color:var(--tx3)" id="techHintExt"></span></div>
+    <div class="tw"><table><thead><tr><th>Technicien</th><th>Total</th><th>Effectuées</th><th>Taux clôture</th><th>Durée moy.</th><th>Cette semaine</th><th>À facturer</th><th>Statut</th></tr></thead><tbody id="tbodyExt"></tbody></table></div>
   </div>
   <!-- EQUIPEMENTS -->
   <div class="eq-sep"></div>
@@ -404,8 +404,8 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
 
 <!-- PAGE SAV INTERNE -->
 <div class="page" id="pageInt">
-  <div class="page-hdr"><div class="page-dot" style="background:var(--gn)"></div>SAV Interne — Prises en charge</div>
-  <div class="mb"><div class="sh"><div class="st">KPI SAV Interne</div><span style="font-size:10px;color:var(--tx3)" id="periodLblInt"></span></div><div class="kg" id="kpiGrid"></div></div>
+  <div class="page-hdr"><div class="page-dot" style="background:var(--gn)"></div>SAV Interne — Prises en charge<span style="font-size:10px;color:var(--tx3);margin-left:8px" id="issueLoadStatus">Chargement...</span></div>
+  <div class="mb"><div class="sh"><div class="st">KPI SAV Interne</div><span style="font-size:10px;color:var(--tx3)" id="periodLblInt"></span></div><div class="kg" id="kpiGridInt"></div></div>
   <div class="issue-grid mb">
     <div class="kpi"><div class="kl">Total prises en charge</div><div class="kv bl" id="issueKpiTotal">—</div><div class="ks">Depuis l'origine</div></div>
     <div class="kpi"><div class="kl">Nouvelles</div><div class="kv bl" id="issueKpiNew">—</div><div class="ks">Statut Nouveau</div></div>
@@ -428,8 +428,8 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
   </div>
   <div class="mb"><div class="sh"><div class="st">Évolution SAV Interne</div></div>
     <div class="cg cg2">
-      <div class="card"><div class="ct">Par jour</div><div class="cs" id="daySubLbl"></div><div class="cw" style="height:180px"><canvas id="cDay"></canvas></div></div>
-      <div class="card"><div class="ct">Par mois</div><div class="cw" style="height:180px"><canvas id="cMens"></canvas></div></div>
+      <div class="card"><div class="ct">Par jour</div><div class="cs" id="daySubLblInt"></div><div class="cw" style="height:180px"><canvas id="cDayInt"></canvas></div></div>
+      <div class="card"><div class="ct">Par mois</div><div class="cw" style="height:180px"><canvas id="cMensInt"></canvas></div></div>
     </div>
   </div>
   <div class="cg cg2 mb">
@@ -437,7 +437,7 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
     <div class="card"><div class="ct">Durée par équipement</div><div class="cw" style="height:220px"><canvas id="cIssueEquipDur"></canvas></div></div>
   </div>
   <div class="mb"><div class="sh"><div class="st">Performance techniciens SAV Interne</div></div>
-    <div class="tw"><table><thead><tr><th>Technicien</th><th>Total</th><th>Effectuées</th><th>Taux clôture</th><th>Durée moy.</th><th>Statut</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="tw"><table><thead><tr><th>Technicien</th><th>Total</th><th>Effectuées</th><th>Taux clôture</th><th>Durée moy.</th><th>Statut</th></tr></thead><tbody id="tbodyInt"></tbody></table></div>
   </div>
 </div>
 
@@ -481,9 +481,9 @@ function updatePill(n){
 }
 
 // ── DRAG DROP ────────────────────────────────────────────
-document.body.addEventListener('dragover',function(e){e.preventDefault();document.getElementById('dov').classList.add('show');});
-document.body.addEventListener('dragleave',function(e){if(!e.relatedTarget)document.getElementById('dov').classList.remove('show');});
-document.body.addEventListener('drop',function(e){e.preventDefault();document.getElementById('dov').classList.remove('show');if(e.dataTransfer.files[0])importCSV(e.dataTransfer.files[0]);});
+document.body.addEventListener('dragover',function(e){e.preventDefault();(document.getElementById('dov')||{classList:{add:function(){},remove:function(){}}}).classList.add('show');});
+document.body.addEventListener('dragleave',function(e){if(!e.relatedTarget)(document.getElementById('dov')||{classList:{add:function(){},remove:function(){}}}).classList.remove('show');});
+document.body.addEventListener('drop',function(e){e.preventDefault();(document.getElementById('dov')||{classList:{add:function(){},remove:function(){}}}).classList.remove('show');if(e.dataTransfer.files[0])importCSV(e.dataTransfer.files[0]);});
 
 // ── CSV IMPORT ───────────────────────────────────────────
 function importCSV(file){
@@ -608,17 +608,20 @@ function getSAVAll() {
   return ALL.filter(function(r){ return savNames.indexOf(r.act) >= 0; });
 }
 
+// Canvas ID mapping per tab
+var TAB_IDS = {
+  global: {kpiGrid:'kpiGrid',cDay:'cDay',cMens:'cMens',cCat:'cCat',cCli:'cCli',wkCard:'wkCard',tbody:'tbody',daySubLbl:'daySubLbl',techHint:'techHint'},
+  ext:    {kpiGrid:'kpiGridExt',cDay:'cDayExt',cMens:'cMensExt',cCat:'cCatExt',cCli:'cCliExt',wkCard:'wkCardExt',tbody:'tbodyExt',daySubLbl:'daySubLblExt',techHint:'techHintExt'},
+  int:    {kpiGrid:'kpiGridInt',cDay:'cDayInt',cMens:'cMensInt',cCat:'cCatInt',cCli:'cCliExt',wkCard:'wkCardInt',tbody:'tbodyInt',daySubLbl:'daySubLblInt',techHint:'techHintInt'},
+};
+function tId(key){ return TAB_IDS[CURRENT_TAB]?.[key] || key; }
+
 function render(){
   var range=getPeriodRange();
   var F=getFiltered(range.s,range.e);
   // Filter by current tab
   var tabFilter = getSAVFilter_byTab ? getSAVFilter_byTab() : null;
   if(tabFilter) F=F.filter(function(r){return tabFilter.indexOf(r.act)>=0;});
-  // Update period labels for all tabs
-  ['periodLbl','periodLblExt','periodLblInt','techHint','techHintExt'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.textContent=document.getElementById('periodLbl')?.textContent||'';
-  });
-  // Render appropriate tab content
   if(CURRENT_TAB==='int'&&ISSUES_LOADED) { try{renderIssues();}catch(e){} }
   renderAlert(F);
   renderKPIs(F,range);
@@ -776,7 +779,7 @@ function renderKPIs(F,range){
     // 12. Facturée sous garantie
     {l:'Sous garantie',u:'interv.',v:garantie,s:'Statut Facturé sous garantie',c:'bl'},
   ];
-  document.getElementById('kgrid').innerHTML=kpis.map(function(k){
+  document.getElementById(tId('kpiGrid')).innerHTML=kpis.map(function(k){
     var val=k.pct?'<span class="ku">'+k.u+'</span>'+k.v:''+k.v+'<span class="ku" style="font-size:11px;margin-left:3px">'+k.u+'</span>';
     return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv '+k.c+'">'+val+'</div><div class="ks">'+k.s+'</div>'+(k.trend!==undefined?'<div class="ktr '+(k.trend>0?'up':k.trend<0?'dn':'fl')+'">'+(k.trend>=0?'↑':'↓')+' '+Math.abs(k.trend)+' vs S-1</div>':'')+'</div>';
   }).join('');
@@ -802,8 +805,8 @@ function renderDay(F,range){
     if(period==='annee')return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][d.getMonth()];
     return d.getDate()+'/'+(d.getMonth()+1);
   });
-  dc('cDay');
-  CH.cDay=new Chart(document.getElementById('cDay'),{
+  dc(tId('cDay'));
+  CH.cDay=new Chart(document.getElementById(tId('cDay')),{
     type:'bar',
     data:{labels:labs,datasets:[{
       label:'Interventions',
@@ -815,7 +818,7 @@ function renderDay(F,range){
       scales:{x:{ticks:{color:'#444c56',font:{size:9},maxRotation:0},grid:{display:false}},
               y:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}
   });
-  document.getElementById('daySubLbl').textContent='Interventions par jour · '+keys.length+' jours · total '+F.length;
+  document.getElementById(tId('daySubLbl')).textContent='Interventions par jour · '+keys.length+' jours · total '+F.length;
 }
 
 // ── MENSUEL 18 MOIS ──────────────────────────────────────
@@ -829,8 +832,8 @@ function renderMens(){
   var keys=Object.keys(bm).sort().slice(-18);
   var mn=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   var labs=keys.map(function(k){var p=k.split('-');return mn[+p[1]-1]+' '+p[0].slice(2);});
-  dc('cMens');
-  CH.cMens=new Chart(document.getElementById('cMens'),{
+  dc(tId('cMens'));
+  CH.cMens=new Chart(document.getElementById(tId('cMens')),{
     type:'bar',
     data:{labels:labs,datasets:[
       {label:'Effectuées',data:keys.map(function(k){return bm[k].e;}),backgroundColor:'#3fb950',borderRadius:2,stack:'s'},
@@ -863,15 +866,15 @@ function renderWeekly(){
     var bc=tx>=90?'gn':tx>=75?'am':'rd';
     return '<div class="wr"><div class="wl">'+k+'</div><div class="wb"><div class="wf" style="width:'+Math.round(w.t/mx*100)+'%;background:'+col+'"></div></div><div class="wn" style="color:'+col+'">'+w.t+'</div><div class="wt"><span class="bk '+bc+'">'+tx+'%</span></div></div>';
   }).join('');
-  document.getElementById('wkCard').innerHTML=html||'<div style="padding:12px;color:var(--tx3);font-size:12px">Pas de données</div>';
+  document.getElementById(tId('wkCard')).innerHTML=html||'<div style="padding:12px;color:var(--tx3);font-size:12px">Pas de données</div>';
 }
 
 // ── CATÉGORIE ────────────────────────────────────────────
 function renderCat(F){
   var bc={};F.forEach(function(r){if(r.cat)bc[r.cat]=(bc[r.cat]||0)+1;});
   var s=Object.entries(bc).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  dc('cCat');
-  CH.cCat=new Chart(document.getElementById('cCat'),{
+  dc(tId('cCat'));
+  CH.cCat=new Chart(document.getElementById(tId('cCat')),{
     type:'bar',
     data:{labels:s.map(function(e){return e[0];}),datasets:[{data:s.map(function(e){return e[1];}),backgroundColor:TC,borderRadius:3}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
@@ -935,7 +938,7 @@ function renderTech(F,range){
       +'<td>'+(af>0?'<span class="bk am">'+af+'</span>':'<span style="color:var(--tx3)">0</span>')+'</td>'
       +'<td><span class="bk '+tc+'">'+sl+'</span></td></tr>';
   });
-  document.getElementById('tbody').innerHTML=rows.join('')||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:20px;font-size:12px">Aucune donnée sur cette période</td></tr>';
+  document.getElementById(tId('tbody')).innerHTML=rows.join('')||'<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:20px;font-size:12px">Aucune donnée sur cette période</td></tr>';
 }
 
 // ── DURÉE ─────────────────────────────────────────────────
@@ -985,8 +988,8 @@ function renderType(F){
 function renderCli(F){
   var bc={};F.forEach(function(r){if(r.cl)bc[r.cl]=(bc[r.cl]||0)+1;});
   var top=Object.entries(bc).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-  dc('cCli');
-  CH.cCli=new Chart(document.getElementById('cCli'),{
+  dc(tId('cCli'));
+  CH.cCli=new Chart(document.getElementById(tId('cCli')),{
     type:'bar',
     data:{labels:top.map(function(e){return e[0].length>28?e[0].slice(0,28)+'…':e[0];}),datasets:[{data:top.map(function(e){return e[1];}),backgroundColor:'#39d353',borderRadius:3}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
@@ -1232,8 +1235,8 @@ window.addEventListener('load',function(){
       b.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9998;background:#1B4F8A;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-family:IBM Plex Sans,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px;';
       b.innerHTML='<span>Connectez-vous a l API ORGANILOG pour les donnees en temps reel</span><button id="cfgBBtn" style="background:#fff;color:#1B4F8A;border:none;border-radius:5px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Configurer</button><button id="cfgBClose" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;line-height:1">x</button>';
       document.body.appendChild(b);
-      document.getElementById('cfgBBtn').addEventListener('click',function(){b.remove();document.getElementById('btnConfig').click();});
-      document.getElementById('cfgBClose').addEventListener('click',function(){b.remove();});
+      (document.getElementById('cfgBBtn')||{addEventListener:function(){}}).addEventListener('click',function(){b.remove();document.getElementById('btnConfig').click();});
+      (document.getElementById('cfgBClose')||{addEventListener:function(){}}).addEventListener('click',function(){b.remove();});
     }
   },2000);
 });
@@ -1537,16 +1540,9 @@ var ISSUE_STATUS_CLS = {
 var PRIORITY_LBL = {'1':'Faible', '2':'Normal', '3':'Haut', '4':'Urgent'};
 
 function setSAV(mode) {
-  SAV_MODE = mode;
-  // Update tab styles
-  document.getElementById('savBtnAll').className = 'sav-tab' + (mode==='all'?' on-all':'');
-  document.getElementById('savBtnExt').className = 'sav-tab' + (mode==='ext'?' on-ext':'');
-  document.getElementById('savBtnInt').className = 'sav-tab' + (mode==='int'?' on-int':'');
-  // Show/hide SAV Interne section
-  var intSec = document.getElementById('savIntSection');
-  if (intSec) intSec.classList.toggle('show', mode==='int');
-  // Re-render dashboard with new filter
-  render();
+  // Legacy - now handled by switchTab
+  var map = {'all':'global','ext':'ext','int':'int'};
+  if(map[mode]) switchTab(map[mode]);
 }
 
 function getSAVFilter() {
@@ -1571,11 +1567,7 @@ function filterBySAV(rows) {
 
 // Update badge counts
 function updateSAVBadges() {
-  var ext = ALL.filter(function(r){ return SAV_EXT_IDS.some(function(id){ return r.act===DICT_CATS[id]; }); });
-  var int_ = ALL.filter(function(r){ return SAV_INT_IDS.some(function(id){ return r.act===DICT_CATS[id]; }); });
-  document.getElementById('savBadgeAll').textContent = ALL.length;
-  document.getElementById('savBadgeExt').textContent = ext.length;
-  document.getElementById('savBadgeInt').textContent = int_.length;
+  try { updateTabBadges(); } catch(e) {}
 }
 
 // ── CHARGEMENT ISSUES ───────────────────────────────────────────
