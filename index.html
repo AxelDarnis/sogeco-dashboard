@@ -1464,6 +1464,30 @@ function resetEqFilters() {
   renderEquip();
 }
 
+
+// ── CHARGEMENT ÉQUIPEMENTS ───────────────────────────────────────
+async function loadEquipements() {
+  if (EQ_LOADED) { renderEquip(); return; }
+  var tok = gTok();
+  if (!tok) return;
+  document.getElementById('eqLoadStatus').textContent = 'Chargement équipements...';
+  try {
+    var eqs = await loadAllPages('equipement/read_all');
+    EQ_ALL = eqs;
+    var ints = await loadAllPages('intervention_equipement/read_all', {last_datetime:'2020-01-01 00:00'});
+    EQ_INT = ints;
+    var addrPages = await loadAllPages('adresse/read_all');
+    addrPages.forEach(function(a){ EQ_ADDR[a.id] = a; });
+    EQ_LOADED = true;
+    document.getElementById('eqLoadStatus').textContent = EQ_ALL.length + ' équipements · ' + EQ_INT.length + ' liaisons';
+    fillEqFilters();
+    renderEquip();
+  } catch(e) {
+    document.getElementById('eqLoadStatus').textContent = 'Erreur: ' + e.message;
+    console.error('Equip load error:', e);
+  }
+}
+
 // ── RENDER ÉQUIPEMENTS ───────────────────────────────────────────
 function renderEquip() {
   if (!EQ_LOADED) return;
@@ -2025,9 +2049,9 @@ async function doApiLoad(tok){
     }
 
     fillSelects(); navNow();
-    loadEquipements();
-    loadIssues();
-    updateSAVBadges();
+    try { loadEquipements(); } catch(e) { console.warn('loadEquipements:', e.message); }
+    try { loadIssues(); } catch(e) { console.warn('loadIssues:', e.message); }
+    try { updateSAVBadges(); } catch(e) { console.warn('updateSAVBadges:', e.message); }
     document.getElementById('apiProgFill').style.width = '100%';
     var p = document.getElementById('pill'); p.classList.add('ok');
     document.getElementById('ptxt').textContent = ALL.length.toLocaleString('fr-FR')+' interventions (API Live)';
