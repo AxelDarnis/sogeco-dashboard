@@ -212,13 +212,41 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
 .eq-cgrid{display:grid;gap:10px;margin-bottom:16px}
 .eq-cgrid2{grid-template-columns:1fr 1fr}
 .eq-cgrid3{grid-template-columns:1fr 1fr 1fr}
-#mapContainer{height:420px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bo);margin-bottom:16px}
-.leaflet-popup-content{font-family:'IBM Plex Sans',sans-serif;font-size:12px;line-height:1.5}
-.leaflet-popup-content b{color:#1B4F8A}
 .eq-loading{text-align:center;padding:40px;color:var(--tx3);font-size:13px}
 .eq-amort-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--tx3);margin-bottom:8px}
 .eq-amort-leg-item{display:flex;align-items:center;gap:5px}
 .eq-amort-dot{width:20px;height:3px;border-radius:2px}
+
+
+/* ── SAV SELECTOR ───────────────────────────────────────────── */
+.sav-tabs{display:flex;background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--r2);padding:2px;gap:2px}
+.sav-tab{font-size:11px;font-weight:600;padding:5px 14px;border-radius:3px;cursor:pointer;border:none;background:none;font-family:'IBM Plex Sans',sans-serif;transition:all .15s;color:var(--tx3)}
+.sav-tab.on-all{background:#444c56;color:#fff}
+.sav-tab.on-ext{background:#1B4F8A;color:#fff}
+.sav-tab.on-int{background:#1D7A4F;color:#fff}
+.sav-badge{display:inline-block;background:rgba(255,255,255,.15);border-radius:3px;padding:1px 5px;font-size:9px;margin-left:4px;font-weight:400}
+
+/* ── SAV INTERNE SECTION ─────────────────────────────────────── */
+.sav-int-section{display:none}
+.sav-int-section.show{display:block}
+.issue-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-bottom:16px}
+.issue-card{background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);padding:14px 16px;transition:border-color .15s}
+.issue-card:hover{border-color:var(--bo2)}
+.issue-status{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-bottom:8px}
+.s-new{background:rgba(68,147,248,.15);color:#4493f8}
+.s-prog{background:rgba(245,158,11,.15);color:#d29922}
+.s-wait{background:rgba(188,140,255,.15);color:#bc8cff}
+.s-done{background:rgba(63,185,80,.15);color:#3fb950}
+.s-close{background:rgba(100,100,100,.15);color:#768390}
+.issue-nom{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:4px}
+.issue-meta{font-size:11px;color:var(--tx3)}
+.issue-progress{height:4px;background:var(--bg4);border-radius:2px;margin-top:8px;overflow:hidden}
+.issue-progress-fill{height:100%;border-radius:2px;background:var(--gn)}
+.prise-table{width:100%;border-collapse:collapse;font-size:12px}
+.prise-table th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bo);background:var(--bg3)}
+.prise-table td{padding:8px 12px;color:var(--tx);border-bottom:1px solid var(--bo)}
+.prise-table tr:last-child td{border-bottom:none}
+.prise-table tr:hover td{background:rgba(255,255,255,.02)}
 
 </style>
 </head>
@@ -231,6 +259,13 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
     <span class="bname">SOGECO</span>
     <div class="bsep"></div>
     <span class="bsub">GMAO · Pilotage SAV</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-right:8px">
+    <div class="sav-tabs" id="savTabs">
+      <button class="sav-tab on-all" id="savBtnAll" onclick="setSAV('all')">Tous <span class="sav-badge" id="savBadgeAll">—</span></button>
+      <button class="sav-tab" id="savBtnExt" onclick="setSAV('ext')">SAV Externe <span class="sav-badge" id="savBadgeExt">—</span></button>
+      <button class="sav-tab" id="savBtnInt" onclick="setSAV('int')">SAV Interne <span class="sav-badge" id="savBadgeInt">—</span></button>
+    </div>
   </div>
   <div class="tb-r">
     <div class="pill api-pill" id="apiPill" style="display:none"><span class="pdot"></span><span id="apiPillTxt">API</span></div>
@@ -391,6 +426,83 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
     </div>
 
 
+
+    <!-- ═══ SAV INTERNE — PRISES EN CHARGE ═══ -->
+    <div class="sav-int-section mb" id="savIntSection">
+      <div class="eq-sep" style="background:linear-gradient(90deg,#1D7A4F,transparent)"></div>
+      <div class="sh">
+        <div class="st" style="--bl:#1D7A4F">Prises en charge — SAV Interne</div>
+        <span style="font-size:10px;color:var(--tx3)" id="issueLoadStatus">Chargement en cours...</span>
+      </div>
+
+      <!-- KPIs prises en charge -->
+      <div class="issue-grid" id="issueKpiGrid">
+        <div class="kpi"><div class="kl">Total prises en charge</div><div class="kv bl" id="issueKpiTotal">—</div><div class="ks">Depuis l'origine</div></div>
+        <div class="kpi"><div class="kl">Nouvelles</div><div class="kv bl" id="issueKpiNew">—</div><div class="ks" style="color:#4493f8">Statut Nouveau</div></div>
+        <div class="kpi"><div class="kl">En cours</div><div class="kv am" id="issueKpiProg">—</div><div class="ks">En traitement</div></div>
+        <div class="kpi"><div class="kl">Attente réponse</div><div class="kv pu" id="issueKpiWait">—</div><div class="ks">En attente client</div></div>
+        <div class="kpi"><div class="kl">Résolues</div><div class="kv gn" id="issueKpiDone">—</div><div class="ks">Statut Résolu/Fermé</div></div>
+        <div class="kpi"><div class="kl">Taux résolution</div><div class="kv gn" id="issueKpiRate">—</div><div class="ks">% résolues / total</div></div>
+        <div class="kpi"><div class="kl">Progression moy.</div><div class="kv pu" id="issueKpiRatio">—</div><div class="ks">Done ratio moyen</div></div>
+        <div class="kpi"><div class="kl">Interventions liées</div><div class="kv bl" id="issueKpiInt">—</div><div class="ks">Via client commun</div></div>
+      </div>
+
+      <!-- Graphiques prises en charge -->
+      <div class="cg cg2 mb">
+        <div class="card">
+          <div class="ct">Évolution des prises en charge</div>
+          <div class="cs">Par mois — statut à la création</div>
+          <div class="cw" style="height:200px"><canvas id="cIssueMens"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ct">Répartition par statut</div>
+          <div class="cs">État actuel des prises en charge</div>
+          <div class="cw" style="height:200px"><canvas id="cIssueStatus"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tableau prises en charge -->
+      <div class="mb">
+        <div class="sh">
+          <div class="st" style="--bl:#1D7A4F">Détail des prises en charge ouvertes</div>
+          <div style="display:flex;gap:6px">
+            <select id="issueFilterStatus" style="background:var(--bg3);border:1px solid var(--bo2);color:var(--tx);border-radius:var(--r2);padding:4px 8px;font-size:11px;font-family:'IBM Plex Sans',sans-serif;outline:none" onchange="renderIssueTable()">
+              <option value="">Tous statuts</option>
+              <option value="1">Nouveau</option>
+              <option value="2">En cours</option>
+              <option value="3">Attente réponse</option>
+              <option value="4">Résolu</option>
+              <option value="5">Fermé/Rejeté</option>
+            </select>
+          </div>
+        </div>
+        <div class="tw">
+          <table class="prise-table">
+            <thead><tr>
+              <th>N°</th><th>Titre</th><th>Client</th><th>Statut</th>
+              <th>Priorité</th><th>Début</th><th>Progression</th><th>Technicien</th>
+            </tr></thead>
+            <tbody id="issueTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Graphique interventions liées par client SAV Interne -->
+      <div class="cg cg2 mb">
+        <div class="card">
+          <div class="ct">Interventions SAV Interne par client</div>
+          <div class="cs">Nombre d'interventions sur la période</div>
+          <div class="cw" style="height:220px"><canvas id="cIssueCliInt"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ct">Durée SAV Interne par équipement</div>
+          <div class="cs">Temps passé — top 10 équipements</div>
+          <div class="cw" style="height:220px"><canvas id="cIssueEquipDur"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- ═══ SECTION EQUIPEMENTS & CLIENTS ═══ -->
     <div class="eq-sep"></div>
     <div class="mb">
@@ -429,10 +541,6 @@ footer{border-top:1px solid var(--bo);padding:14px 24px;display:flex;align-items
         <div class="kpi"><div class="kl">Sous garantie</div><div class="kv gn" id="eqKpiGarantie">—</div><div class="ks">Garantie active</div></div>
       </div>
 
-      <!-- Carte géographique -->
-      <div class="mb">
-        <div class="sh"><div class="st">Localisation clients & équipements</div><span style="font-size:10px;color:var(--tx3)">Géocodage par ville · OpenStreetMap</span></div>
-        <div id="mapContainer"><div class="eq-loading">⏳ Chargement de la carte...</div></div>
       </div>
 
       <!-- Graphiques équipements -->
@@ -643,6 +751,13 @@ function resetF(){
 function render(){
   var range=getPeriodRange();
   var F=getFiltered(range.s,range.e);
+  if(SAV_MODE!=='all'){
+    var savNames=getSAVFilter().map(function(id){return DICT_CATS[id]||'';}).filter(Boolean);
+    if(savNames.length>0) F=F.filter(function(r){return savNames.indexOf(r.act)>=0;});
+  }
+  var intSec=document.getElementById('savIntSection');
+  if(intSec) intSec.classList.toggle('show',SAV_MODE==='int');
+  if(SAV_MODE==='int'&&ISSUES_LOADED) renderIssues();
   renderAlert(F);
   renderKPIs(F,range);
   renderDay(F,range);
@@ -1265,8 +1380,6 @@ window.addEventListener('load',function(){
 var EQ_ALL = [];        // tous les équipements
 var EQ_INT = [];        // liaisons intervention-équipement
 var EQ_ADDR = {};       // fk_adresse_id -> adresse
-var EQ_GEOCACHE = {};   // ville -> {lat,lng}
-var EQ_MAP = null;      // instance Leaflet
 var EQ_LOADED = false;
 
 // Référentiel prix par type (extrait des ventes SOGECO 2023-2025)
@@ -1294,36 +1407,6 @@ function detectEquipType(nom) {
 }
 
 // ── CHARGEMENT ÉQUIPEMENTS ───────────────────────────────────────
-async function loadEquipements() {
-  if (EQ_LOADED) { renderEquip(); return; }
-  var base = getProxyBase(), tok = gTok();
-  if (!tok) return;
-  document.getElementById('eqLoadStatus').textContent = 'Chargement équipements...';
-  try {
-    // 1. Charger équipements
-    var eqs = await loadAllPages('equipement/read_all');
-    EQ_ALL = eqs;
-
-    // 2. Charger liaisons intervention-équipement
-    var ints = await loadAllPages('intervention_equipement/read_all', {last_datetime:'2020-01-01 00:00'});
-    EQ_INT = ints;
-
-    // 3. Charger adresses (par lots)
-    var addrPages = await loadAllPages('adresse/read_all');
-    addrPages.forEach(function(a){ EQ_ADDR[a.id] = a; });
-
-    EQ_LOADED = true;
-    document.getElementById('eqLoadStatus').textContent = EQ_ALL.length + ' équipements · ' + EQ_INT.length + ' liaisons';
-
-    fillEqFilters();
-    renderEquip();
-    renderMap();
-
-  } catch(e) {
-    document.getElementById('eqLoadStatus').textContent = 'Erreur: ' + e.message;
-    console.error('Equip load error:', e);
-  }
-}
 
 // ── FILTRES ÉQUIPEMENTS ──────────────────────────────────────────
 function fillEqFilters() {
@@ -1544,82 +1627,264 @@ function renderAmort() {
   });
 }
 
-// ── CARTE LEAFLET ────────────────────────────────────────────────
-async function geocodeVille(ville, cp) {
-  var key = (cp||'') + '_' + (ville||'');
-  if (EQ_GEOCACHE[key]) return EQ_GEOCACHE[key];
-  // Default Guadeloupe coords if geocoding fails
-  var defaultCoords = {lat: 16.25, lng: -61.55};
-  try {
-    var q = encodeURIComponent((ville||'') + ', ' + (cp||'97100') + ', Guadeloupe, France');
-    var r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + q + '&limit=1', {
-      headers: {'Accept-Language':'fr', 'User-Agent':'SOGECO-GMAO/1.0'}
-    });
-    var data = await r.json();
-    if (data && data.length > 0) {
-      var coords = {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
-      EQ_GEOCACHE[key] = coords;
-      return coords;
-    }
-  } catch(e) {}
-  EQ_GEOCACHE[key] = defaultCoords;
-  return defaultCoords;
+
+
+
+
+// ══ SAV SELECTOR ════════════════════════════════════════════════
+var SAV_MODE = 'all'; // 'all' | 'ext' | 'int'
+var ISSUES_ALL = [];
+var ISSUES_LOADED = false;
+
+// Filiales
+var SAV_EXT_IDS = ['5559', '5985']; // LAVAGE + GARAGE
+var SAV_INT_IDS = ['5564'];         // SAV Interne
+
+var ISSUE_STATUS = {
+  '1':'Nouveau', '2':'En cours', '3':'Attente réponse',
+  '4':'Résolu', '5':'Fermé/Rejeté'
+};
+var ISSUE_STATUS_CLS = {
+  '1':'s-new', '2':'s-prog', '3':'s-wait', '4':'s-done', '5':'s-close'
+};
+var PRIORITY_LBL = {'1':'Faible', '2':'Normal', '3':'Haut', '4':'Urgent'};
+
+function setSAV(mode) {
+  SAV_MODE = mode;
+  // Update tab styles
+  document.getElementById('savBtnAll').className = 'sav-tab' + (mode==='all'?' on-all':'');
+  document.getElementById('savBtnExt').className = 'sav-tab' + (mode==='ext'?' on-ext':'');
+  document.getElementById('savBtnInt').className = 'sav-tab' + (mode==='int'?' on-int':'');
+  // Show/hide SAV Interne section
+  var intSec = document.getElementById('savIntSection');
+  if (intSec) intSec.classList.toggle('show', mode==='int');
+  // Re-render dashboard with new filter
+  render();
 }
 
-async function renderMap() {
-  var mapDiv = document.getElementById('mapContainer');
-  mapDiv.innerHTML = '<div id="leafletMap" style="height:100%;width:100%"></div>';
+function getSAVFilter() {
+  if (SAV_MODE === 'ext') return SAV_EXT_IDS;
+  if (SAV_MODE === 'int') return SAV_INT_IDS;
+  return null; // all
+}
 
-  // Initialiser Leaflet
-  if (typeof L === 'undefined') {
-    mapDiv.innerHTML = '<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">⚠️ Carte disponible uniquement en ligne (GitHub Pages). Leaflet non chargé en local.</div>';
-    return;
+// SAV filter applied in render() directly
+// var _origGetFiltered = getFiltered; // disabled
+if(false){
+  var F = _origGetFiltered(s, e);
+  var savIds = getSAVFilter();
+  if (!savIds) return F;
+  return F.filter(function(r) {
+    return savIds.some(function(id) {
+      return r.act && (r.act.indexOf(DICT_CATS[id]||id) >= 0 || r.act === DICT_CATS[id]);
+    }) || savIds.indexOf(r.fk_filiale||'') >= 0;
+  });
+};
+
+// Better SAV filter using fk_filiale stored in row
+// We need to store fk_filiale in mapApiRow - it's already in act via DICT_CATS
+// Let's filter by checking act field against known filiale names
+function filterBySAV(rows) {
+  var savIds = getSAVFilter();
+  if (!savIds) return rows;
+  var savNames = savIds.map(function(id) { return DICT_CATS[id] || ''; }).filter(Boolean);
+  return rows.filter(function(r) {
+    return savNames.some(function(name) { return r.act === name; });
+  });
+}
+
+// Update badge counts
+function updateSAVBadges() {
+  var ext = ALL.filter(function(r){ return SAV_EXT_IDS.some(function(id){ return r.act===DICT_CATS[id]; }); });
+  var int_ = ALL.filter(function(r){ return SAV_INT_IDS.some(function(id){ return r.act===DICT_CATS[id]; }); });
+  document.getElementById('savBadgeAll').textContent = ALL.length;
+  document.getElementById('savBadgeExt').textContent = ext.length;
+  document.getElementById('savBadgeInt').textContent = int_.length;
+}
+
+// ── CHARGEMENT ISSUES ───────────────────────────────────────────
+async function loadIssues() {
+  if (ISSUES_LOADED) { renderIssues(); return; }
+  var base = getProxyBase(), tok = gTok();
+  if (!tok) return;
+  document.getElementById('issueLoadStatus').textContent = 'Chargement prises en charge...';
+  try {
+    var pages = [];
+    for (var p = 1; p <= 6; p++) pages.push(p);
+    var results = await Promise.all(pages.map(async function(pg) {
+      var body = { account:'sogeco', token:tok, page_nbr:String(pg),
+        order_by:'id', order_sort:'desc', last_datetime:'2020-01-01 00:00',
+        endpoint:'issue/read_all' };
+      var r = await fetch(base+'/api/proxy', {method:'POST',
+        headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+      if (!r.ok) return [];
+      var j = await r.json();
+      return j.results || [];
+    }));
+    ISSUES_ALL = [].concat.apply([], results).filter(function(i){ return i && i.id; });
+    ISSUES_LOADED = true;
+    document.getElementById('issueLoadStatus').textContent = ISSUES_ALL.length + ' prises en charge chargées';
+    renderIssues();
+  } catch(e) {
+    document.getElementById('issueLoadStatus').textContent = 'Erreur: ' + e.message;
   }
-  if (EQ_MAP) { EQ_MAP.remove(); EQ_MAP = null; }
-  EQ_MAP = L.map('leafletMap').setView([16.25, -61.55], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors', maxZoom: 18
-  }).addTo(EQ_MAP);
+}
 
-  // Regrouper équipements par adresse client
-  var addrEquips = {};
-  EQ_ALL.forEach(function(e) {
-    var aId = e.fk_adresse_id;
-    if (!addrEquips[aId]) addrEquips[aId] = [];
-    addrEquips[aId].push(e);
+// ── RENDER ISSUES ───────────────────────────────────────────────
+function renderIssues() {
+  if (!ISSUES_LOADED) return;
+
+  // Filter to SAV Interne issues + period
+  var range = getPeriodRange();
+  var issues = ISSUES_ALL.filter(function(i) {
+    // SAV Interne = fk_filiale_id 5564 OR 0 (non affecté)
+    if (SAV_MODE === 'ext') return false; // pas d'issues SAV Externe
+    var d = i.date_start && i.date_start !== '0000-00-00' ? new Date(i.date_start) : null;
+    if (d && (d < range.s || d > range.e)) return false;
+    return true;
   });
 
-  // Géocoder et placer marqueurs (par lots pour éviter rate limit Nominatim)
-  var addrIds = Object.keys(addrEquips);
-  var placed = 0;
-  for (var i = 0; i < addrIds.length; i++) {
-    var aId = addrIds[i];
-    var addr = EQ_ADDR[aId];
-    if (!addr) continue;
-    var ville = addr.ville || 'Guadeloupe';
-    var cp = addr.code_postal || '97100';
-    var coords = await geocodeVille(ville, cp);
-    // Petit décalage aléatoire pour éviter la superposition
-    var lat = coords.lat + (Math.random()-0.5)*0.002;
-    var lng = coords.lng + (Math.random()-0.5)*0.002;
-    var equips = addrEquips[aId];
-    var cl = DICT_CLIENTS[equips[0].fk_client_id] || 'Client inconnu';
-    var popupContent = '<b>' + cl + '</b><br>' + (addr.adresse||'') + '<br>' + cp + ' ' + ville +
-      '<br><br><b>' + equips.length + ' équipement' + (equips.length>1?'s':'') + '</b><br>' +
-      equips.slice(0,5).map(function(e){ return '• ' + e.nom.slice(0,40); }).join('<br>') +
-      (equips.length > 5 ? '<br>...' : '');
-    var color = equips.length >= 5 ? '#f85149' : equips.length >= 3 ? '#f59e0b' : '#4493f8';
-    var marker = L.circleMarker([lat, lng], {
-      radius: Math.min(6 + equips.length * 2, 18),
-      fillColor: color, color: '#fff', weight: 1.5,
-      opacity: 1, fillOpacity: 0.85
-    }).addTo(EQ_MAP);
-    marker.bindPopup(popupContent);
-    placed++;
-    // Pause toutes les 5 requêtes pour respecter Nominatim
-    if (i % 5 === 4) await new Promise(function(r){ setTimeout(r, 1000); });
-  }
-  console.log('Map: ' + placed + ' marqueurs placés');
+  // KPIs
+  var byStatus = {'1':0,'2':0,'3':0,'4':0,'5':0};
+  var totalRatio = 0;
+  issues.forEach(function(i) {
+    byStatus[i.status] = (byStatus[i.status]||0) + 1;
+    totalRatio += parseInt(i.done_ratio||0);
+  });
+  var resolved = (byStatus['4']||0) + (byStatus['5']||0);
+  var rate = issues.length > 0 ? Math.round(resolved/issues.length*100) : 0;
+  var avgRatio = issues.length > 0 ? Math.round(totalRatio/issues.length) : 0;
+
+  // Interventions SAV Interne (via fk_filiale_id 5564)
+  var intSAVInt = ALL.filter(function(r) {
+    return r.act === DICT_CATS['5564'];
+  });
+
+  document.getElementById('issueKpiTotal').textContent = issues.length;
+  document.getElementById('issueKpiNew').textContent = byStatus['1']||0;
+  document.getElementById('issueKpiProg').textContent = byStatus['2']||0;
+  document.getElementById('issueKpiWait').textContent = byStatus['3']||0;
+  document.getElementById('issueKpiDone').textContent = resolved;
+  document.getElementById('issueKpiRate').textContent = rate + '%';
+  document.getElementById('issueKpiRatio').textContent = avgRatio + '%';
+  document.getElementById('issueKpiInt').textContent = intSAVInt.length;
+
+  // Chart mensuel issues
+  var byMonth = {};
+  issues.forEach(function(i) {
+    var k = (i.date_start||'').slice(0,7);
+    if (!k || k === '0000-0') return;
+    if (!byMonth[k]) byMonth[k] = {'1':0,'2':0,'3':0,'4':0,'5':0};
+    byMonth[k][i.status] = (byMonth[k][i.status]||0) + 1;
+  });
+  var mkeys = Object.keys(byMonth).sort().slice(-12);
+  var mn = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  var mlabs = mkeys.map(function(k){ var p=k.split('-'); return mn[+p[1]-1]+' '+p[0].slice(2); });
+  dc('cIssueMens');
+  CH.cIssueMens = new Chart(document.getElementById('cIssueMens'), {
+    type: 'bar',
+    data: { labels: mlabs, datasets: [
+      {label:'Nouveau', data:mkeys.map(function(k){return byMonth[k]['1']||0;}), backgroundColor:'#4493f8', borderRadius:2, stack:'s'},
+      {label:'En cours', data:mkeys.map(function(k){return byMonth[k]['2']||0;}), backgroundColor:'#d29922', borderRadius:2, stack:'s'},
+      {label:'Attente', data:mkeys.map(function(k){return byMonth[k]['3']||0;}), backgroundColor:'#bc8cff', borderRadius:2, stack:'s'},
+      {label:'Résolu', data:mkeys.map(function(k){return byMonth[k]['4']||0;}), backgroundColor:'#3fb950', borderRadius:2, stack:'s'},
+      {label:'Fermé', data:mkeys.map(function(k){return byMonth[k]['5']||0;}), backgroundColor:'#768390', borderRadius:2, stack:'s'},
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#768390',font:{size:10},boxWidth:8,padding:8}}},
+      scales:{x:{ticks:{color:'#444c56',font:{size:9}},grid:{display:false},stacked:true},
+              y:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'},stacked:true}} }
+  });
+
+  // Chart statuts
+  var statusLabels = Object.keys(byStatus).map(function(k){return ISSUE_STATUS[k];});
+  var statusData = Object.values(byStatus);
+  dc('cIssueStatus');
+  CH.cIssueStatus = new Chart(document.getElementById('cIssueStatus'), {
+    type: 'doughnut',
+    data: { labels: statusLabels, datasets: [{ data:statusData,
+      backgroundColor:['#4493f8','#d29922','#bc8cff','#3fb950','#768390'], borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{color:'#768390',font:{size:10},boxWidth:8,padding:8}}} }
+  });
+
+  // Chart interventions SAV Interne par client
+  var byClient = {};
+  intSAVInt.forEach(function(r){
+    if(r.cl) byClient[r.cl] = (byClient[r.cl]||0)+1;
+  });
+  var topCli = Object.entries(byClient).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  dc('cIssueCliInt');
+  CH.cIssueCliInt = new Chart(document.getElementById('cIssueCliInt'), {
+    type:'bar',
+    data:{labels:topCli.map(function(e){return e[0].length>24?e[0].slice(0,24)+'…':e[0];}),
+      datasets:[{data:topCli.map(function(e){return e[1];}),backgroundColor:'#1D7A4F',borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#768390',font:{size:10}},grid:{display:false}}}}
+  });
+
+  // Chart durée SAV Interne par équipement
+  var intWithEquip = EQ_INT.filter(function(i){
+    return i.intervention_fk_filiale_id === '5564';
+  });
+  var byEquip = {};
+  intWithEquip.forEach(function(i){
+    var nom = (i.equipement_nom||'').slice(0,30);
+    if (!nom) return;
+    var h = (i.intervention_done_hour||'00:00').split(':');
+    var min = parseInt(h[0])*60 + parseInt(h[1]);
+    byEquip[nom] = (byEquip[nom]||0) + min;
+  });
+  var topEquip = Object.entries(byEquip).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  dc('cIssueEquipDur');
+  CH.cIssueEquipDur = new Chart(document.getElementById('cIssueEquipDur'), {
+    type:'bar',
+    data:{labels:topEquip.map(function(e){return e[0];}),
+      datasets:[{data:topEquip.map(function(e){return Math.round(e[1]/60*10)/10;}),
+        backgroundColor:'#1D7A4F',borderRadius:3,label:'Heures'}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#444c56',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'},
+        title:{display:true,text:'Heures',color:'#444c56',font:{size:9}}},
+              y:{ticks:{color:'#768390',font:{size:10}},grid:{display:false}}}}
+  });
+
+  // Render table
+  renderIssueTable();
+}
+
+function renderIssueTable() {
+  var filterStatus = document.getElementById('issueFilterStatus').value;
+  var range = getPeriodRange();
+  var issues = ISSUES_ALL.filter(function(i) {
+    if (filterStatus && i.status !== filterStatus) return false;
+    var d = i.date_start && i.date_start !== '0000-00-00' ? new Date(i.date_start) : null;
+    if (d && (d < range.s || d > range.e)) return false;
+    return true;
+  }).slice(0, 50); // max 50 lignes
+
+  var rows = issues.map(function(i) {
+    var cl = DICT_CLIENTS[i.fk_client_id] || ('Client #'+i.fk_client_id);
+    var tech = DICT_USERS[i.fk_user_id] || (i.fk_user_id==='0'?'Non affecté':'User #'+i.fk_user_id);
+    var stCls = ISSUE_STATUS_CLS[i.status] || 's-new';
+    var stLbl = ISSUE_STATUS[i.status] || '?';
+    var prio = PRIORITY_LBL[i.priority] || 'Normal';
+    var prioColor = i.priority==='4'?'#f85149':i.priority==='3'?'#d29922':'var(--tx3)';
+    var ratio = parseInt(i.done_ratio||0);
+    return '<tr>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--tx3)">N°'+i.code_id+'</td>'
+      +'<td style="font-weight:500">'+i.nom+'</td>'
+      +'<td style="color:var(--tx2)">'+cl+'</td>'
+      +'<td><span class="bk '+stCls+'">'+stLbl+'</span></td>'
+      +'<td style="color:'+prioColor+';font-size:11px">'+prio+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px">'+(i.date_start!=='0000-00-00'?i.date_start:'—')+'</td>'
+      +'<td><div class="issue-progress" style="width:80px;display:inline-block"><div class="issue-progress-fill" style="width:'+ratio+'%"></div></div>'
+      +'<span style="font-size:10px;color:var(--tx3);margin-left:4px">'+ratio+'%</span></td>'
+      +'<td style="font-size:11px;color:var(--tx2)">'+tech+'</td>'
+      +'</tr>';
+  }).join('');
+  document.getElementById('issueTbody').innerHTML = rows ||
+    '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:16px">Aucune prise en charge sur cette période</td></tr>';
 }
 
 
@@ -1772,6 +2037,8 @@ async function doApiLoad(tok){
 
     fillSelects(); navNow();
     loadEquipements();
+    loadIssues();
+    updateSAVBadges();
     document.getElementById('apiProgFill').style.width = '100%';
     var p = document.getElementById('pill'); p.classList.add('ok');
     document.getElementById('ptxt').textContent = ALL.length.toLocaleString('fr-FR')+' interventions (API Live)';
