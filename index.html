@@ -783,7 +783,7 @@ function renderAlert(F){
     document.getElementById('alertTxt').innerHTML='<div class="alrt-top"><span>⚠️</span><span><strong>'+na.length+' intervention'+(na.length>1?'s':'')+' planifiée'+(na.length>1?'s':'')+' sans technicien affecté</strong> — À attribuer en priorité.</span></div><div class="alrt-nums">'+nums+'</div>';
   }else el.style.display='none';
 }
-function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escH(s){return (s||'').replace(/'/g,'&#39;');}
 
 // ── KPIs ─────────────────────────────────────────────────
 
@@ -1669,17 +1669,6 @@ function getSAVFilter() {
 }
 
 // SAV filter applied in render() directly
-// var _origGetFiltered = getFiltered; // disabled
-if(false){
-  var F = _origGetFiltered(s, e);
-  var savIds = getSAVFilter();
-  if (!savIds) return F;
-  return F.filter(function(r) {
-    return savIds.some(function(id) {
-      return r.act && (r.act.indexOf(DICT_CATS[id]||id) >= 0 || r.act === DICT_CATS[id]);
-    }) || savIds.indexOf(r.fk_filiale||'') >= 0;
-  });
-};
 
 // Better SAV filter using fk_filiale stored in row
 // We need to store fk_filiale in mapApiRow - it's already in act via DICT_CATS
