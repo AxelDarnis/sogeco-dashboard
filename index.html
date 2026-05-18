@@ -748,6 +748,15 @@ function resetF(){
 }
 
 // ── RENDER ───────────────────────────────────────────────
+
+// ── SAV FILTERED DATA ────────────────────────────────────────────
+function getSAVAll() {
+  // Returns ALL filtered by current SAV mode (ignoring period filter)
+  if (SAV_MODE === 'all') return ALL;
+  var savNames = getSAVFilter().map(function(id){return DICT_CATS[id]||'';}).filter(Boolean);
+  return ALL.filter(function(r){ return savNames.indexOf(r.act) >= 0; });
+}
+
 function render(){
   var range=getPeriodRange();
   var F=getFiltered(range.s,range.e);
@@ -959,7 +968,7 @@ function renderDay(F,range){
 // ── MENSUEL 18 MOIS ──────────────────────────────────────
 function renderMens(){
   var bm={};
-  ALL.forEach(function(r){
+  getSAVAll().forEach(function(r){
     var k=r.d.slice(0,7);
     if(!bm[k])bm[k]={e:0,p:0};
     if(r.ok)bm[k].e++;if(r.pl)bm[k].p++;
@@ -984,7 +993,7 @@ function renderMens(){
 // ── WEEKLY ───────────────────────────────────────────────
 function renderWeekly(){
   var bw={};
-  ALL.forEach(function(r){
+  getSAVAll().forEach(function(r){
     if(!r.wk){
       var jan=new Date(r._d.getFullYear(),0,1);
       var w=Math.ceil(((r._d-jan)/864e5+jan.getDay()+1)/7);
@@ -1021,11 +1030,12 @@ function renderCat(F){
 // ── PROGRESSION ANNUELLE ─────────────────────────────────
 function renderProg(){
   var now=new Date(),ty=now.getFullYear(),py=ty-1;
+  var SAVALL=getSAVAll();
   var ts={};
-  ALL.forEach(function(r){r.e.split(',').forEach(function(t){t=t.trim();if(t&&t!=='nan'&&t!=='Support GEOTRA')ts[t]=1;});});
+  SAVALL.forEach(function(r){r.e.split(',').forEach(function(t){t=t.trim();if(t&&t!=='nan'&&t!=='Support GEOTRA')ts[t]=1;});});
   var techs=Object.keys(ts).sort().slice(0,6);
-  var dT=techs.map(function(t){return ALL.filter(function(r){return r._d.getFullYear()===ty&&r.e.indexOf(t)>=0;}).length;});
-  var dP=techs.map(function(t){return ALL.filter(function(r){return r._d.getFullYear()===py&&r.e.indexOf(t)>=0;}).length;});
+  var dT=techs.map(function(t){return SAVALL.filter(function(r){return r._d.getFullYear()===ty&&r.e.indexOf(t)>=0;}).length;});
+  var dP=techs.map(function(t){return SAVALL.filter(function(r){return r._d.getFullYear()===py&&r.e.indexOf(t)>=0;}).length;});
   dc('cProg');
   CH.cProg=new Chart(document.getElementById('cProg'),{
     type:'bar',
@@ -1212,7 +1222,7 @@ function renderMaint(F, range) {
 
   // ── Évolution prév/cura 12 mois ──
   var bm={};
-  ALL.forEach(function(r){
+  getSAVAll().forEach(function(r){
     var k=r.d.slice(0,7);
     if(!bm[k])bm[k]={p:0,c:0};
     if(/préventive|controle/i.test(r.cat))bm[k].p++;
