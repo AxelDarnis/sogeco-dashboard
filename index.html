@@ -572,9 +572,10 @@ function getPeriodRange(){
     s=new Date(yr,0,1);e=new Date(yr,11,31,23,59,59);
     lbl='Année '+yr;
   }
-  document.getElementById('navLbl').textContent=lbl;
-  document.getElementById('plbl').textContent=lbl;
-  document.getElementById('tHint').textContent=lbl;
+  // Safe update - elements may not exist in all tab contexts
+  ['navLbl','plbl','tHint','periodLbl','periodLblExt','periodLblInt','techHint','techHintExt'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.textContent=lbl;
+  });
   return{s:s,e:e};
 }
 function getWeekNum(d){var jan=new Date(d.getFullYear(),0,1);return Math.ceil(((d-jan)/864e5+jan.getDay()+1)/7);}
@@ -1794,6 +1795,10 @@ function getSAVFilter_byTab() {
   if (CURRENT_TAB==='int') return ['SAV Interne'];
   return null;
 }
+
+
+// Safe getElementById - returns dummy object if not found
+function gEl(id){var el=document.getElementById(id);return el||{textContent:'',innerHTML:'',style:{},classList:{add:function(){},remove:function(){},toggle:function(){}}};}
 
 function dc(id){
   if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];}
