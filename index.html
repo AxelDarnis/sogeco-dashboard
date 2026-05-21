@@ -806,7 +806,7 @@ function renderDay(F,range){
     return d.getDate()+'/'+(d.getMonth()+1);
   });
   dc(tId('cDay'));
-  CH.cDay=new Chart(document.getElementById(tId('cDay')),{
+  CH[tId('cDay')]=new Chart(document.getElementById(tId('cDay')),{
     type:'bar',
     data:{labels:labs,datasets:[{
       label:'Interventions',
@@ -833,7 +833,7 @@ function renderMens(){
   var mn=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   var labs=keys.map(function(k){var p=k.split('-');return mn[+p[1]-1]+' '+p[0].slice(2);});
   dc(tId('cMens'));
-  CH.cMens=new Chart(document.getElementById(tId('cMens')),{
+  CH[tId('cMens')]=new Chart(document.getElementById(tId('cMens')),{
     type:'bar',
     data:{labels:labs,datasets:[
       {label:'Effectuées',data:keys.map(function(k){return bm[k].e;}),backgroundColor:'#3fb950',borderRadius:2,stack:'s'},
@@ -874,7 +874,7 @@ function renderCat(F){
   var bc={};F.forEach(function(r){if(r.cat)bc[r.cat]=(bc[r.cat]||0)+1;});
   var s=Object.entries(bc).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
   dc(tId('cCat'));
-  CH.cCat=new Chart(document.getElementById(tId('cCat')),{
+  CH[tId('cCat')]=new Chart(document.getElementById(tId('cCat')),{
     type:'bar',
     data:{labels:s.map(function(e){return e[0];}),datasets:[{data:s.map(function(e){return e[1];}),backgroundColor:TC,borderRadius:3}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
@@ -893,7 +893,7 @@ function renderProg(){
   var dT=techs.map(function(t){return SAVALL.filter(function(r){return r._d.getFullYear()===ty&&r.e.indexOf(t)>=0;}).length;});
   var dP=techs.map(function(t){return SAVALL.filter(function(r){return r._d.getFullYear()===py&&r.e.indexOf(t)>=0;}).length;});
   dc('cProg');
-  CH.cProg=new Chart(document.getElementById('cProg'),{
+  CH[tId('cProg')]=new Chart(document.getElementById('cProg'),{
     type:'bar',
     data:{labels:techs.map(function(t){return t.split(' ').pop();}),datasets:[
       {label:String(py),data:dP,backgroundColor:'rgba(68,147,248,.2)',borderRadius:2},
@@ -989,7 +989,7 @@ function renderCli(F){
   var bc={};F.forEach(function(r){if(r.cl)bc[r.cl]=(bc[r.cl]||0)+1;});
   var top=Object.entries(bc).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
   dc(tId('cCli'));
-  CH.cCli=new Chart(document.getElementById(tId('cCli')),{
+  CH[tId('cCli')]=new Chart(document.getElementById(tId('cCli')),{
     type:'bar',
     data:{labels:top.map(function(e){return e[0].length>28?e[0].slice(0,28)+'…':e[0];}),datasets:[{data:top.map(function(e){return e[1];}),backgroundColor:'#39d353',borderRadius:3}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
@@ -1793,7 +1793,17 @@ function getSAVFilter_byTab() {
 function gEl(id){var el=document.getElementById(id);return el||{textContent:'',innerHTML:'',style:{},classList:{add:function(){},remove:function(){},toggle:function(){}}};}
 
 function dc(id){
+  // Destroy chart stored under this key
   if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];}
+  // Also destroy any chart on the actual canvas element (by tId)
+  var realId = typeof tId === 'function' ? tId(id) : id;
+  if(realId !== id && CH[realId]){try{CH[realId].destroy();}catch(e){} delete CH[realId];}
+  // Force destroy via canvas element
+  var canvas = document.getElementById(realId)||document.getElementById(id);
+  if(canvas && canvas.getContext){
+    var existing = Chart.getChart(canvas);
+    if(existing){try{existing.destroy();}catch(e){}}
+  }
 }
 
 // ── CHARGEMENT INCREMENTAL ──────────────────────────────────────
